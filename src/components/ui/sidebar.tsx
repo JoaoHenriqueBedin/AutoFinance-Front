@@ -7,13 +7,17 @@ import {
   FileText,
   Users,
   Car,
+  
   Settings,
   HelpCircle,
   User as UserIcon,
   X,
+  DoorOpen,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import logo from "../../assets/logo.svg";
+import { useNavigate } from "react-router-dom";
+import { logout } from "../../services/login-service";
 
 type SidebarProps = {
   open: boolean;
@@ -22,6 +26,8 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ open, onClose, onLinkClick }: SidebarProps) {
+  const navigate = useNavigate();
+
   return (
     <div
       className={`
@@ -71,7 +77,7 @@ export default function Sidebar({ open, onClose, onLinkClick }: SidebarProps) {
         {[
           { to: "/settings", icon: <Settings size={18} />, label: "Configurações" },
           { to: "/users", icon: <UserIcon size={18} />, label: "Usuários" },
-          { to: "/help", icon: <HelpCircle size={18} />, label: "Ajuda" },
+          { to: "/help", icon: <HelpCircle size={18} />, label: "Ajuda" }
         ].map(({ to, icon, label }) => (
           <SidebarItem
             key={to}
@@ -81,6 +87,18 @@ export default function Sidebar({ open, onClose, onLinkClick }: SidebarProps) {
             onClick={onLinkClick}
           />
         ))}
+        <button
+          onClick={() => {
+            logout(); // Remove o token
+            navigate("/login"); // Redireciona para a tela de login
+          }}
+          className="flex items-center gap-3 py-2 px-2 rounded-md text-sm text-gray-700 hover:bg-[#e4e8f8] transition-all"
+        >
+          <span className="text-[#B7B8C9]">
+            <DoorOpen size={18} />
+          </span>
+          <span className="font-medium">Sair</span>
+        </button>
       </nav>
     </div>
   );

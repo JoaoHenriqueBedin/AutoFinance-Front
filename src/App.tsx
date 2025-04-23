@@ -1,10 +1,17 @@
 import { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+} from "react-router-dom";
 import { Menu } from "lucide-react";
 
 import Sidebar from "./components/ui/sidebar";
 import Login from "./modules/login/screens/login";
 import Home from "./modules/home/screens/home";
+import ProtectedRoute from "./utils/ProtectedRoute";
 
 function App() {
   return (
@@ -46,7 +53,15 @@ function MainLayout() {
         `}
       >
         <Routes>
-          <Route path="/home" element={<Home />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/login" element={<Login />} />
           {/* outras rotas */}
         </Routes>

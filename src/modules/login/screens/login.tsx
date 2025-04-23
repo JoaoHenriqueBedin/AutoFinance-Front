@@ -1,24 +1,45 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import logo from "../../../assets/logo.svg";
 import alvo from "../../../assets/alvo.svg";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password";
 import { Button } from "@/components/ui/button";
-import { useForm } from "react-hook-form";
-
-type FormData = {
-  email: string;
-  password: string;
-};
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  getToken,
+  isTokenExpired,
+  login,
+} from "../../../services/login-service";
 
 export default function Login() {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>();
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false); // Estado para o carregamento
+  const navigate = useNavigate();
 
-  const onSubmit = (data: FormData) => {
-    console.log("Dados enviados:", data);
+  useEffect(() => {
+    const token = getToken();
+    if (token && !isTokenExpired(token)) {
+      navigate("/home"); // Redireciona para a tela home se o token for válido
+    }
+  }, [navigate]);
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      await login(email, senha);
+      navigate("/home");
+    } catch (err: any) {
+      setError(err.message);
+    }finally {
+      setIsLoading(false); // Finaliza o carregamento
+    }
   };
 
   return (
@@ -28,7 +49,7 @@ export default function Login() {
       </div>
 
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit}
         className="flex flex-col w-full items-start md:w-[30%] md:items-center md:mt-2 px-14 mt-10"
       >
         <p className="text-center text-base font-bold mt-10 flex items-center justify-center gap-2">
@@ -36,46 +57,33 @@ export default function Login() {
           <img src={alvo} alt="Ícone" />
         </p>
 
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+
         <div className="flex flex-col mt-4 w-full py-2">
           <label className="text-sm">Email</label>
           <Input
             type="email"
-            placeholder="Digite seu email"
-            {...register("email", {
-              required: "O e-mail é obrigatório",
-              pattern: {
-                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                message: "Formato de e-mail inválido",
-              },
-            })}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-2 border rounded"
+            required
+            placeholder="Digite seu e-mail"
           />
-          {errors.email && (
-            <span className="text-sm text-red-500 mt-1">
-              {errors.email.message}
-            </span>
-          )}
         </div>
 
         <div className="flex flex-col mt-4 w-full py-2">
           <label className="text-sm">Senha</label>
           <PasswordInput
-            {...register("password", {
-              required: "A senha é obrigatória",
-              minLength: {
-                value: 6,
-                message: "A senha deve ter pelo menos 6 caracteres",
-              },
-            })}
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            className="w-full p-2 border rounded"
           />
-          {errors.password && (
-            <span className="text-sm text-red-500 mt-1">
-              {errors.password.message}
-            </span>
-          )}
         </div>
 
         <div className="flex flex-col mt-4 w-full py-2">
-          <Button type="submit">ENTRAR</Button>
+        <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Carregando..." : "ENTRAR"}
+          </Button>
         </div>
 
         <div className="flex flex-col items-center mt-4 w-full py-4">
