@@ -26,7 +26,6 @@ export default function Login() {
     }
   }, [navigate]);
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -37,7 +36,7 @@ export default function Login() {
       navigate("/home");
     } catch (err: any) {
       setError(err.message);
-    }finally {
+    } finally {
       setIsLoading(false); // Finaliza o carregamento
     }
   };
@@ -60,7 +59,7 @@ export default function Login() {
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
         <div className="flex flex-col mt-4 w-full py-2">
-          <label className="text-sm">Email</label>
+          <label className="text-sm">E-mail</label>
           <Input
             type="email"
             value={email}
@@ -81,7 +80,7 @@ export default function Login() {
         </div>
 
         <div className="flex flex-col mt-4 w-full py-2">
-        <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading}>
             {isLoading ? "Carregando..." : "ENTRAR"}
           </Button>
         </div>

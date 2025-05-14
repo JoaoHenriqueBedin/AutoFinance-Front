@@ -49,7 +49,7 @@ function MainLayout() {
       <div
         className={`
           flex-1 min-h-screen bg-white transition-margin duration-300
-          ${withSidebar ? "md:ml-72" : ""}
+          ${withSidebar ? "ml-4 p-4" : "ml-4 p-4"}
         `}
       >
         <Routes>
