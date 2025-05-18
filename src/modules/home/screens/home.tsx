@@ -1,4 +1,9 @@
-function Home() {
+import StatCard from "@/components/ui/statCard";
+import { Calendar } from "@/components/ui/calendar";
+import RecentServices from "@/components/ui/recentServices";
+import RecentBudgets from "@/components/ui/recentBudgets";
+
+export default function Home() {
   const stats = [
     { label: "Clientes", value: 0 },
     { label: "Ordens em andamento", value: 0 },
@@ -7,24 +12,36 @@ function Home() {
   ];
 
   return (
-    <div className="">
-      <h2 className="text-lg font-semibold text-gray-700 mb-4 mt-16 md:mt-0">Início</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-        {stats.map((stat, index) => (
-          <div
-            key={index}
-            className="rounded shadow p-4 flex flex-col items-center justify-center"
-            style={{
-              backgroundColor: "#F9F9F9",
-            }}
-          >
-            <span className="text-sm text-gray-600">{stat.label}:</span>
-            <span className="text-3xl font-semibold text-slate-800">0</span>
+    <div className="px-4 py-6 space-y-6">
+      <h2 className="text-lg font-semibold text-gray-700">Início</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Coluna Esquerda */}
+        <div className="flex flex-col space-y-6">
+          <div className="grid grid-cols-2 gap-2">
+            {stats.map((stat) => (
+              <StatCard 
+                key={stat.label} 
+                label={stat.label} 
+                value={stat.value} 
+              />
+            ))}
           </div>
-        ))}
+
+          <div className="w-full">
+            <Calendar />
+          </div>
+        </div>
+
+        {/* Coluna Direita */}
+        <div className="flex flex-col space-y-6">
+        
+          <RecentServices />
+
+          <RecentBudgets />
+        </div>
       </div>
     </div>
   );
 }
-
-export default Home;

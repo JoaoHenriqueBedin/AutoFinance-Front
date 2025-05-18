@@ -12,6 +12,7 @@ import Sidebar from "./components/ui/sidebar";
 import Login from "./modules/login/screens/login";
 import Home from "./modules/home/screens/home";
 import ProtectedRoute from "./utils/ProtectedRoute";
+import { ToastContainer } from "react-toastify";
 
 function App() {
   return (
@@ -66,6 +67,19 @@ function MainLayout() {
           {/* outras rotas */}
         </Routes>
       </div>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+
     </div>
   );
 }

@@ -11,6 +11,10 @@ body {
   font-family: 'Poppins', sans-serif;
 }
 
+.rdp {
+  --rdp-cell-size: 60px; /* agora cada célula terá 60px */
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

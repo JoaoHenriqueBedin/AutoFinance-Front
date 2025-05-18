@@ -6,6 +6,7 @@ import { PasswordInput } from "@/components/ui/password";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   getToken,
   isTokenExpired,
@@ -15,29 +16,56 @@ import {
 export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // Estado para o carregamento
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = getToken();
     if (token && !isTokenExpired(token)) {
-      navigate("/home"); // Redireciona para a tela home se o token for válido
+      navigate("/home");
     }
   }, [navigate]);
 
+
+  const validateForm = (): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!email && !senha) {
+      toast.error("E‑mail e senha são obrigatórios");
+      return false;
+    }
+
+    if (!email.trim()) {
+      toast.error("E‑mail é obrigatório");
+      return false;
+    }
+
+    if (!emailRegex.test(email)) {
+      toast.error("Formato de e‑mail inválido");
+      return false;
+    }
+
+    if (!senha.trim()) {
+      toast.error("Senha é obrigatória");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
 
+    if (!validateForm()) return;
+
+    setIsLoading(true);
     try {
       await login(email, senha);
+      toast.success("Login realizado com sucesso!");
       navigate("/home");
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message || "Falha no login. Verifique suas credenciais.");
     } finally {
-      setIsLoading(false); // Finaliza o carregamento
+      setIsLoading(false);
     }
   };
 
@@ -49,14 +77,13 @@ export default function Login() {
 
       <form
         onSubmit={handleSubmit}
+        noValidate
         className="flex flex-col w-full items-start md:w-[30%] md:items-center md:mt-2 px-14 mt-10"
       >
         <p className="text-center text-base font-bold mt-10 flex items-center justify-center gap-2">
           Acesse sua conta
           <img src={alvo} alt="Ícone" />
         </p>
-
-        {error && <p className="text-red-500 mb-4">{error}</p>}
 
         <div className="flex flex-col mt-4 w-full py-2">
           <label className="text-sm">E-mail</label>
@@ -65,7 +92,6 @@ export default function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full p-2 border rounded"
-            required
             placeholder="Digite seu e-mail"
           />
         </div>
