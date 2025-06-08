@@ -1,0 +1,606 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import * as React from "react";
+import { Eye, Edit, Trash2, Plus, Search } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+// Dados de exemplo dos orçamentos (sem alterações)
+const budgets = [
+  {
+    id: 1,
+    cliente: "João Silva",
+    carro: "Fiat Uno 2012",
+    servico: "Troca de óleo",
+    valor: "R$ 150,00",
+    mecanico: "Gustavo",
+  },
+  {
+    id: 2,
+    cliente: "Maria Oliveira",
+    carro: "Volkswagen Gol 2018",
+    servico: "Alinhamento e balanceamento",
+    valor: "R$ 120,00",
+    mecanico: "Isabely",
+  },
+  {
+    id: 3,
+    cliente: "Carlos Souza",
+    carro: "Chevrolet Onix 2019",
+    servico: "Revisão dos freios",
+    valor: "R$ 250,00",
+    mecanico: "João",
+  },
+  {
+    id: 4,
+    cliente: "Ana Paula Lima",
+    carro: "Honda Civic 2020",
+    servico: "Troca do filtro de ar",
+    valor: "R$ 80,00",
+    mecanico: "Gustavo",
+  },
+  {
+    id: 5,
+    cliente: "Fernando Ribeiro",
+    carro: "Toyota Corolla 2018",
+    servico: "Revisão dos amortecedores",
+    valor: "R$ 380,00",
+    mecanico: "Isabely",
+  },
+  {
+    id: 6,
+    cliente: "Lucas Martins",
+    carro: "Ford Ka 2016",
+    servico: "Substituição da correia dentada",
+    valor: "R$ 450,00",
+    mecanico: "João",
+  },
+  {
+    id: 7,
+    cliente: "Bruno Costa",
+    carro: "Renault Sandero 2017",
+    servico: "Troca da bateria",
+    valor: "R$ 300,00",
+    mecanico: "Gustavo",
+  },
+  {
+    id: 8,
+    cliente: "Patrícia Gomes",
+    carro: "Hyundai HB20 2021",
+    servico: "Higienização do ar-condicionado",
+    valor: "R$ 130,00",
+    mecanico: "Isabely",
+  },
+];
+
+export default function BudgetScreen() {
+  const [selectedBudget, setSelectedBudget] = React.useState<any>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
+  const [isRecoverDialogOpen, setIsRecoverDialogOpen] = React.useState(false);
+  const [editForm, setEditForm] = React.useState({
+    cliente: "",
+    carro: "",
+    servico: "",
+    valor: "",
+    mecanico: "",
+  });
+
+  const handleView = (budget: any) => {
+    setSelectedBudget(budget);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleEdit = (budget: any) => {
+    setSelectedBudget(budget);
+    setEditForm({
+      cliente: budget.cliente,
+      carro: budget.carro,
+      servico: budget.servico,
+      valor: budget.valor,
+      mecanico: budget.mecanico,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (budgetId: number) => {
+    console.log("Excluindo orçamento:", budgetId);
+  };
+
+  const handleSaveEdit = () => {
+    console.log("Salvando edição:", editForm);
+    setIsEditDialogOpen(false);
+  };
+
+  const handleCreateBudget = () => {
+    console.log("Criando novo orçamento");
+    setIsCreateDialogOpen(false);
+  };
+
+  const handleRecoverBudget = () => {
+    console.log("Recuperando orçamento");
+    setIsRecoverDialogOpen(false);
+  };
+
+  // Função para renderizar os botões de ação (evita repetição de código)
+  const renderActionButtons = (budget: any) => (
+    <div className="flex gap-1">
+      {/* View Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0 text-blue-600 hover:bg-purple-100"
+        onClick={() => handleView(budget)}
+      >
+        <Eye className="h-4 w-4" />
+      </Button>
+      {/* Edit Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0 text-green-600 hover:bg-green-50"
+        onClick={() => handleEdit(budget)}
+      >
+        <Edit className="h-4 w-4" />
+      </Button>
+      {/* Delete Button */}
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o orçamento de {budget.cliente}?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDelete(budget.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+
+  return (
+    // AJUSTE 1: Padding responsivo para melhor visualização em telas pequenas.
+    <div className="flex-1 p-4 sm:p-6 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-4">
+            Orçamentos
+          </h1>
+
+          {/* Action Buttons */}
+          {/* AJUSTE 2: Empilhar botões em telas pequenas (flex-col) e manter lado a lado em telas maiores (sm:flex-row) */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <Dialog
+              open={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <Button className="bg-[#5A6ACF] hover:bg-[#5A6ACF] text-white w-full sm:w-auto">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar novo orçamento
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Criar Novo Orçamento</DialogTitle>
+                  <DialogDescription>
+                    Preencha os dados para criar um novo orçamento.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  {/* Formulário de criação (sem alterações) */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="new-cliente">Cliente</Label>
+                    <Input id="new-cliente" placeholder="Nome do cliente" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="new-carro">Carro</Label>
+                    <Input id="new-carro" placeholder="Modelo e ano do carro" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="new-servico">Serviço</Label>
+                    <Textarea
+                      id="new-servico"
+                      placeholder="Descrição do serviço"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="new-valor">Valor</Label>
+                    <Input id="new-valor" placeholder="R$ 0,00" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="new-mecanico">Mecânico</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o mecânico" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gustavo">Gustavo</SelectItem>
+                        <SelectItem value="isabely">Isabely</SelectItem>
+                        <SelectItem value="joao">João</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCreateDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleCreateBudget}>Criar Orçamento</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog
+              open={isRecoverDialogOpen}
+              onOpenChange={setIsRecoverDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="border-blue-600 text-blue-600 hover:bg-purple-100 w-full sm:w-auto"
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  Recuperar orçamento
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle>Recuperar Orçamento</DialogTitle>
+                  <DialogDescription>
+                    Digite o ID ou código do orçamento para recuperá-lo.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="recover-id">ID do Orçamento</Label>
+                    <Input
+                      id="recover-id"
+                      placeholder="Digite o ID do orçamento"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsRecoverDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleRecoverBudget}>Recuperar</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Table Header */}
+          {/* AJUSTE 3: Empilhar a ordenação em telas pequenas */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+            <span className="text-sm text-gray-600">
+              Listagem de orçamentos:
+            </span>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-sm text-gray-600">Ordenar por:</span>
+              <Select defaultValue="latest">
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="latest">Últimas adicionadas</SelectItem>
+                  <SelectItem value="oldest">Mais antigas</SelectItem>
+                  <SelectItem value="client">Cliente A-Z</SelectItem>
+                  <SelectItem value="value">Maior valor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* AJUSTE 4: ESTRUTURA RESPONSIVA PARA A LISTA */}
+
+        {/* 🖥️ Tabela para Telas Médias e Maiores (md em diante) */}
+        <div className="hidden md:block bg-white rounded-lg shadow-sm border">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-purple-100">
+                <TableHead className="text-[#707FDD] font-medium">
+                  Cliente
+                </TableHead>
+                <TableHead className="text-[#707FDD] font-medium">
+                  Carro
+                </TableHead>
+                <TableHead className="text-[#707FDD] font-medium">
+                  Serviço
+                </TableHead>
+                <TableHead className="text-[#707FDD] font-medium">
+                  Valor (R$)
+                </TableHead>
+                <TableHead className="text-[#707FDD] font-medium">
+                  Mecânico
+                </TableHead>
+                <TableHead className="text-blue-700 font-medium w-32">
+                  Ações
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {budgets.map((budget) => (
+                <TableRow key={budget.id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium">
+                    {budget.cliente}
+                  </TableCell>
+                  <TableCell>{budget.carro}</TableCell>
+                  <TableCell>{budget.servico}</TableCell>
+                  <TableCell className="font-medium text-green-600">
+                    {budget.valor}
+                  </TableCell>
+                  <TableCell>{budget.mecanico}</TableCell>
+                  <TableCell>{renderActionButtons(budget)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* 📱 Lista de Cards para Telas Pequenas (até md) */}
+        <div className="grid grid-cols-1 gap-4 md:hidden">
+          {budgets.map((budget) => (
+            <div
+              key={budget.id}
+              className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3"
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-grow">
+                  <p className="text-sm text-gray-500">Cliente</p>
+                  <p className="font-medium text-gray-900">{budget.cliente}</p>
+                </div>
+                {renderActionButtons(budget)}
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Carro</p>
+                <p className="text-gray-800">{budget.carro}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Serviço</p>
+                <p className="text-gray-800">{budget.servico}</p>
+              </div>
+
+              <div className="flex justify-between items-center mt-2">
+                <div>
+                  <p className="text-sm text-gray-500">Valor</p>
+                  <p className="font-medium text-green-600">{budget.valor}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Mecânico</p>
+                  <p className="text-gray-800">{budget.mecanico}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Pagination */}
+        <div className="flex justify-center mt-6">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-blue-600 text-white border-blue-600"
+            >
+              1
+            </Button>
+            <Button variant="outline" size="sm">
+              2
+            </Button>
+            <Button variant="outline" size="sm">
+              3
+            </Button>
+            <Button variant="outline" size="sm">
+              &gt;
+            </Button>
+          </div>
+        </div>
+
+        {/* View Dialog (sem alterações) */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Visualizar Orçamento</DialogTitle>
+              <DialogDescription>
+                Detalhes do orçamento selecionado.
+              </DialogDescription>
+            </DialogHeader>
+            {selectedBudget && (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Cliente
+                    </Label>
+                    <p className="text-sm">{selectedBudget.cliente}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Carro
+                    </Label>
+                    <p className="text-sm">{selectedBudget.carro}</p>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Serviço
+                  </Label>
+                  <p className="text-sm">{selectedBudget.servico}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Valor
+                    </Label>
+                    <p className="text-sm font-medium text-green-600">
+                      {selectedBudget.valor}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Mecânico
+                    </Label>
+                    <p className="text-sm">{selectedBudget.mecanico}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button onClick={() => setIsViewDialogOpen(false)}>Fechar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Dialog (sem alterações) */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Editar Orçamento</DialogTitle>
+              <DialogDescription>
+                Faça as alterações necessárias no orçamento.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-cliente">Cliente</Label>
+                <Input
+                  id="edit-cliente"
+                  value={editForm.cliente}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, cliente: e.target.value })
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-carro">Carro</Label>
+                <Input
+                  id="edit-carro"
+                  value={editForm.carro}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, carro: e.target.value })
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-servico">Serviço</Label>
+                <Textarea
+                  id="edit-servico"
+                  value={editForm.servico}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, servico: e.target.value })
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-valor">Valor</Label>
+                <Input
+                  id="edit-valor"
+                  value={editForm.valor}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, valor: e.target.value })
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-mecanico">Mecânico</Label>
+                <Select
+                  value={editForm.mecanico}
+                  onValueChange={(value) =>
+                    setEditForm({ ...editForm, mecanico: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Gustavo">Gustavo</SelectItem>
+                    <SelectItem value="Isabely">Isabely</SelectItem>
+                    <SelectItem value="João">João</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveEdit}>Salvar Alterações</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  );
+}

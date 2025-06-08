@@ -13,6 +13,7 @@ import Login from "./modules/login/screens/login";
 import Home from "./modules/home/screens/home";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import { ToastContainer } from "react-toastify";
+import BudgetScreen from "./modules/budgets/screens/budgets";
 
 function App() {
   return (
@@ -63,6 +64,14 @@ function MainLayout() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/budgets" 
+            element={
+              <ProtectedRoute>
+                <BudgetScreen />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/login" element={<Login />} />
           {/* outras rotas */}
         </Routes>
@@ -79,7 +88,6 @@ function MainLayout() {
         pauseOnHover
         theme="colored"
       />
-
     </div>
   );
 }
