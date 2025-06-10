@@ -14,6 +14,7 @@ import Home from "./modules/home/screens/home";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import { ToastContainer } from "react-toastify";
 import BudgetScreen from "./modules/budgets/screens/budgets";
+import OrderScreen from "./modules/orders/screens/order-screen";
 
 function App() {
   return (
@@ -65,10 +66,18 @@ function MainLayout() {
             }
           />
           <Route
-            path="/budgets" 
+            path="/budgets"
             element={
               <ProtectedRoute>
                 <BudgetScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <OrderScreen />
               </ProtectedRoute>
             }
           />
