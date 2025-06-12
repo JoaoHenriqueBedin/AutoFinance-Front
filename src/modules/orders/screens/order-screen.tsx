@@ -362,7 +362,7 @@ export default function ServiceOrdersScreen() {
 
             <Dialog open={isRecoverDialogOpen} onOpenChange={setIsRecoverDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="border-purple-600 text-blue-600 hover:bg-[#5A6ACF] w-full sm:w-auto">
+                <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-purple-100 w-full sm:w-auto">
                   <Search className="w-4 h-4 mr-2" />
                   Recuperar ordem de serviço
                 </Button>

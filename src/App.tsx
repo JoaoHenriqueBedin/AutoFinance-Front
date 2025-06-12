@@ -15,6 +15,7 @@ import ProtectedRoute from "./utils/ProtectedRoute";
 import { ToastContainer } from "react-toastify";
 import BudgetScreen from "./modules/budgets/screens/budgets";
 import OrderScreen from "./modules/orders/screens/order-screen";
+import SchedulingScreen from "./modules/schedules/screens/schedules";
 
 function App() {
   return (
@@ -81,6 +82,14 @@ function MainLayout() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/schedules"
+            element={
+              <ProtectedRoute>
+                <SchedulingScreen />
+              </ProtectedRoute>
+            }
+          />{" "}
           <Route path="/login" element={<Login />} />
           {/* outras rotas */}
         </Routes>
