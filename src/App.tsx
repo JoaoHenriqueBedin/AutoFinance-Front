@@ -16,6 +16,9 @@ import { ToastContainer } from "react-toastify";
 import BudgetScreen from "./modules/budgets/screens/budgets";
 import OrderScreen from "./modules/orders/screens/order-screen";
 import SchedulingScreen from "./modules/schedules/screens/schedules";
+import ServicesScreen from "./modules/services/screens/services";
+import ClientsScreen from "./modules/clients/screens/clients";
+import VehiclesScreen from "./modules/vehicles/screens/vehicles";
 
 function App() {
   return (
@@ -90,6 +93,30 @@ function MainLayout() {
               </ProtectedRoute>
             }
           />{" "}
+          <Route
+            path="/services"
+            element={
+              <ProtectedRoute>
+                <ServicesScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/clients"
+            element={
+              <ProtectedRoute>
+                <ClientsScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vehicles"
+            element={
+              <ProtectedRoute>
+                <VehiclesScreen />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/login" element={<Login />} />
           {/* outras rotas */}
         </Routes>
