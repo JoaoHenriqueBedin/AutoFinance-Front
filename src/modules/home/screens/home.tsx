@@ -29,7 +29,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="w-full">
+          <div className="w-full h-[360px] flex items-start">
             <Calendar />
           </div>
         </div>

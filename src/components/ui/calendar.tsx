@@ -15,33 +15,33 @@ function Calendar({
     <DayPicker
       locale={ptBR}
       showOutsideDays={showOutsideDays}
-      className={cn("p-6 max-w-md", className)}
+      className={cn("p-6 w-full h-[360px]", className)}
       classNames={{
-        months: "flex flex-col sm:flex-row gap-4",
-        month: "flex flex-col gap-6",
-        caption: "flex justify-center pt-1 relative items-center w-full",
-        caption_label: "text-sm font-medium",
-        nav: "flex items-center gap-1 w-full",
+        months: "flex flex-col sm:flex-row gap-4 h-full",
+        month: "flex flex-col gap-6 w-full h-full",
+        caption: "flex justify-between items-center relative w-full h-12 mb-2 px-12",
+        caption_label: "text-xl font-bold text-gray-800 text-center flex-1",
+        nav: "flex items-center justify-between w-full absolute inset-0",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
-          "size-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+          "size-9 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-gray-100"
         ),
-        nav_button_previous: "absolute left-1",
-        nav_button_next: "absolute right-1",
-        table: "w-full border-collapse space-x-1",
-        head_row: "flex",
+        nav_button_previous: "relative left-0",
+        nav_button_next: "relative right-0",
+        table: "w-full border-collapse space-x-1 flex flex-col h-full",
+        head_row: "flex w-full h-10",
         head_cell:
-          "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
-        row: "flex w-full mt-2",
+          "text-muted-foreground rounded-md flex-1 font-medium text-sm h-full flex items-center justify-center",
+        row: "flex w-full flex-1",
         cell: cn(
-          "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-range-end)]:rounded-r-md",
+          "relative p-0 text-center flex-1 h-full focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-range-end)]:rounded-r-md",
           props.mode === "range"
             ? "[&:has(>.day-range-end)]:rounded-r-md [&:has(>.day-range-start)]:rounded-l-md first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md"
             : "[&:has([aria-selected])]:rounded-md"
         ),
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          "size-8 p-0 font-normal aria-selected:opacity-100"
+          "w-full h-full p-0 font-medium text-sm aria-selected:opacity-100 min-h-[40px]"
         ),
         day_range_start:
           "day-range-start aria-selected:bg-primary aria-selected:text-primary-foreground",
