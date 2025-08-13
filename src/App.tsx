@@ -10,6 +10,8 @@ import { Menu } from "lucide-react";
 
 import Sidebar from "./components/ui/sidebar";
 import Login from "./modules/login/screens/login";
+import ForgotPassword from "./modules/login/screens/forgot-password";
+import ResetPassword from "./modules/login/screens/reset-password";
 import Home from "./modules/home/screens/home";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import { ToastContainer } from "react-toastify";
@@ -31,7 +33,9 @@ function App() {
 function MainLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const withSidebar = location.pathname !== "/login";
+  const withSidebar = location.pathname !== "/login" && 
+                     location.pathname !== "/forgot-password" && 
+                     location.pathname !== "/reset-password";
 
   return (
     <div className="flex">
@@ -118,6 +122,8 @@ function MainLayout() {
             }
           />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           {/* outras rotas */}
         </Routes>
       </div>

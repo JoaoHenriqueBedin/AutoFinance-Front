@@ -10,11 +10,11 @@ export function isTokenExpired(token: string): boolean {
   return decoded.exp < currentTime;
 }
 
-export async function login(email: string, senha: string) {
+export async function login(username: string, senha: string) {
   try {
     const response = await axios.post(
       API_URL,
-      { email, senha },
+      { username, password: senha },
       {
         headers: {
           "Content-Type": "application/json",
@@ -47,4 +47,46 @@ export function getToken(): string | null {
     return null;
   }
   return token;
+}
+
+export async function forgotPassword(email: string) {
+  try {
+    const response = await axios.post(
+      "https://autofinance.azurewebsites.net/auth/forgot-password",
+      { email },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    if (error.response && error.response.status === 404) {
+      throw new Error("E-mail não encontrado.");
+    }
+    throw new Error("Erro ao enviar e-mail de recuperação. Tente novamente.");
+  }
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+  try {
+    const response = await axios.post(
+      "https://autofinance.azurewebsites.net/auth/reset-password",
+      { token, newPassword },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    if (error.response && error.response.status === 400) {
+      throw new Error("Token inválido ou expirado.");
+    }
+    throw new Error("Erro ao redefinir senha. Tente novamente.");
+  }
 }

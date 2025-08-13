@@ -14,7 +14,7 @@ import {
 } from "../../../services/login-service";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [usuario, setUser] = useState("");
   const [senha, setSenha] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -28,20 +28,15 @@ export default function Login() {
 
 
   const validateForm = (): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  
 
-    if (!email && !senha) {
-      toast.error("E‑mail e senha são obrigatórios");
+    if (!usuario && !senha) {
+      toast.error("Usuário e senha são obrigatórios");
       return false;
     }
 
-    if (!email.trim()) {
-      toast.error("E‑mail é obrigatório");
-      return false;
-    }
-
-    if (!emailRegex.test(email)) {
-      toast.error("Formato de e‑mail inválido");
+    if (!usuario.trim()) {
+      toast.error("Usuário é obrigatório");
       return false;
     }
 
@@ -59,7 +54,7 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      await login(email, senha);
+      await login(usuario, senha);
       toast.success("Login realizado com sucesso!");
       navigate("/home");
     } catch (err: any) {
@@ -86,13 +81,13 @@ export default function Login() {
         </p>
 
         <div className="flex flex-col mt-4 w-full py-2">
-          <label className="text-sm">E-mail</label>
+          <label className="text-sm">Usuário</label>
           <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="usuario"
+            value={usuario}
+            onChange={(e) => setUser(e.target.value)}
             className="w-full p-2 border rounded"
-            placeholder="Digite seu e-mail"
+            placeholder="Digite seu usuário"
           />
         </div>
 
@@ -103,6 +98,17 @@ export default function Login() {
             onChange={(e) => setSenha(e.target.value)}
             className="w-full p-2 border rounded"
           />
+        </div>
+
+        {/* Forgot Password Link */}
+        <div className="flex justify-center w-full mt-2">
+          <button
+            type="button"
+            onClick={() => navigate("/forgot-password")}
+            className="text-sm text-[#5A6ACF] hover:text-[#4A5ABF] hover:underline"
+          >
+            Esqueci minha senha
+          </button>
         </div>
 
         <div className="flex flex-col mt-4 w-full py-2">
