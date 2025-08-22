@@ -30,166 +30,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 
-// Dados de exemplo dos clientes
-const clients = [
-  {
-    id: 1,
-    nome: "João Silva",
-    email: "joao.silva@email.com",
-    telefone: "(11) 9 1234-5678",
-    cpf: "123.456.789-01",
-    endereco: "Rua das Flores, 123 - São Paulo, SP",
-    cep: "01234-567",
-    dataNascimento: "1985-03-15",
-    status: "Ativo",
-    totalServicos: 5,
-    ultimoServico: "2024-01-20",
-    observacoes: "Cliente preferencial",
-    dataCadastro: new Date("2023-06-15"),
-  },
-  {
-    id: 2,
-    nome: "Maria Oliveira",
-    email: "maria.oliveira@email.com",
-    telefone: "(21) 9 8765-4321",
-    cpf: "987.654.321-09",
-    endereco: "Av. Copacabana, 456 - Rio de Janeiro, RJ",
-    cep: "22070-001",
-    dataNascimento: "1990-07-22",
-    status: "Ativo",
-    totalServicos: 3,
-    ultimoServico: "2024-01-18",
-    observacoes: "",
-    dataCadastro: new Date("2023-08-10"),
-  },
-  {
-    id: 3,
-    nome: "Carlos Souza",
-    email: "carlos.souza@email.com",
-    telefone: "(31) 9 2345-6789",
-    cpf: "456.789.123-45",
-    endereco: "Rua da Liberdade, 789 - Belo Horizonte, MG",
-    cep: "30112-000",
-    dataNascimento: "1978-12-03",
-    status: "Ativo",
-    totalServicos: 8,
-    ultimoServico: "2024-01-22",
-    observacoes: "Possui frota de veículos",
-    dataCadastro: new Date("2023-04-20"),
-  },
-  {
-    id: 4,
-    nome: "Ana Paula Lima",
-    email: "ana.lima@email.com",
-    telefone: "(41) 9 9876-5432",
-    cpf: "789.123.456-78",
-    endereco: "Rua XV de Novembro, 321 - Curitiba, PR",
-    cep: "80020-310",
-    dataNascimento: "1992-05-18",
-    status: "Ativo",
-    totalServicos: 2,
-    ultimoServico: "2024-01-15",
-    observacoes: "",
-    dataCadastro: new Date("2023-11-05"),
-  },
-  {
-    id: 5,
-    nome: "Fernando Ribeiro",
-    email: "fernando.ribeiro@email.com",
-    telefone: "(51) 9 3456-7890",
-    cpf: "321.654.987-12",
-    endereco: "Av. Ipiranga, 654 - Porto Alegre, RS",
-    cep: "90160-093",
-    dataNascimento: "1980-09-10",
-    status: "Inativo",
-    totalServicos: 12,
-    ultimoServico: "2023-11-30",
-    observacoes: "Cliente antigo, mudou-se de cidade",
-    dataCadastro: new Date("2022-01-15"),
-  },
-  {
-    id: 6,
-    nome: "Lucas Martins",
-    email: "lucas.martins@email.com",
-    telefone: "(61) 9 7654-3210",
-    cpf: "654.321.789-01",
-    endereco: "SQN 308, Bloco A - Brasília, DF",
-    cep: "70747-010",
-    dataNascimento: "1988-11-25",
-    status: "Ativo",
-    totalServicos: 6,
-    ultimoServico: "2024-01-19",
-    observacoes: "",
-    dataCadastro: new Date("2023-07-12"),
-  },
-  {
-    id: 7,
-    nome: "Bruno Costa",
-    email: "bruno.costa@email.com",
-    telefone: "(71) 9 4567-8901",
-    cpf: "147.258.369-74",
-    endereco: "Rua da Praia, 987 - Salvador, BA",
-    cep: "40070-110",
-    dataNascimento: "1995-02-14",
-    status: "Ativo",
-    totalServicos: 1,
-    ultimoServico: "2024-01-10",
-    observacoes: "Cliente novo",
-    dataCadastro: new Date("2024-01-05"),
-  },
-  {
-    id: 8,
-    nome: "Patrícia Gomes",
-    email: "patricia.gomes@email.com",
-    telefone: "(85) 9 6543-2109",
-    cpf: "963.852.741-85",
-    endereco: "Av. Beira Mar, 159 - Fortaleza, CE",
-    cep: "60165-121",
-    dataNascimento: "1987-08-07",
-    status: "Ativo",
-    totalServicos: 4,
-    ultimoServico: "2024-01-21",
-    observacoes: "",
-    dataCadastro: new Date("2023-09-18"),
-  },
-  {
-    id: 9,
-    nome: "Roberto Santos",
-    email: "roberto.santos@email.com",
-    telefone: "(11) 9 8888-7777",
-    cpf: "852.741.963-96",
-    endereco: "Rua Augusta, 753 - São Paulo, SP",
-    cep: "01305-100",
-    dataNascimento: "1983-04-30",
-    status: "Ativo",
-    totalServicos: 7,
-    ultimoServico: "2024-01-17",
-    observacoes: "Indicou outros clientes",
-    dataCadastro: new Date("2023-05-22"),
-  },
-  {
-    id: 10,
-    nome: "Juliana Costa",
-    email: "juliana.costa@email.com",
-    telefone: "(21) 9 5555-4444",
-    cpf: "741.852.963-74",
-    endereco: "Rua das Laranjeiras, 246 - Rio de Janeiro, RJ",
-    cep: "22240-070",
-    dataNascimento: "1991-06-12",
-    status: "Ativo",
-    totalServicos: 3,
-    ultimoServico: "2024-01-16",
-    observacoes: "",
-    dataCadastro: new Date("2023-10-08"),
-  },
-]
+// Importar serviços e tipos
+import { 
+  getClientes, 
+  createCliente, 
+  updateCliente, 
+  deleteCliente, 
+  getClienteById,
+  Cliente
+} from "@/servicos/clients-service"
 
 const ITEMS_PER_PAGE = 6
 
 export default function ClientsScreen() {
-  const [selectedClient, setSelectedClient] = React.useState<any>(null)
+  // Estados para dados e UI
+  const [clients, setClients] = React.useState<Cliente[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+  const isInitializedRef = React.useRef(false) // Controle para evitar chamadas duplas
+  const [selectedClient, setSelectedClient] = React.useState<Cliente | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
@@ -197,26 +57,255 @@ export default function ClientsScreen() {
   const [filterStatus, setFilterStatus] = React.useState("todos")
   const [searchTerm, setSearchTerm] = React.useState("")
   const [currentPage, setCurrentPage] = React.useState(1)
-  const [editForm, setEditForm] = React.useState({
+  
+  // Estados para formulários
+    const [createForm, setCreateForm] = React.useState({
     nome: "",
     email: "",
-    telefone: "",
-    cpf: "",
+    celular: "",
+    cpfCnpj: "",
     endereco: "",
     cep: "",
     dataNascimento: "",
-    status: "Ativo",
+    ativo: true,
+    observacoes: "",
+  })
+  
+  const [editForm, setEditForm] = React.useState({
+    nome: "",
+    email: "",
+    celular: "",
+    cpfCnpj: "",
+    endereco: "",
+    cep: "",
+    dataNascimento: "",
+    ativo: true,
     observacoes: "",
   })
 
-  // Função de ordenação e filtros
+  const [formErrors, setFormErrors] = React.useState<{[key: string]: string}>({})
+  const [isLoadingCep, setIsLoadingCep] = React.useState(false)
+
+  // Função para buscar endereço pelo CEP
+  const fetchAddressByCep = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, '')
+    
+    if (cleanCep.length !== 8) return
+    
+    setIsLoadingCep(true)
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
+      const data = await response.json()
+      
+      if (!data.erro) {
+        const fullAddress = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}`
+        setCreateForm(prev => ({
+          ...prev,
+          endereco: fullAddress
+        }))
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error)
+    } finally {
+      setIsLoadingCep(false)
+    }
+  }
+
+  // Função para buscar endereço pelo CEP no modal de edição
+  const fetchAddressByCepEdit = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, '')
+    
+    if (cleanCep.length !== 8) return
+    
+    setIsLoadingCep(true)
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
+      const data = await response.json()
+      
+      if (!data.erro) {
+        const fullAddress = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}`
+        setEditForm(prev => ({
+          ...prev,
+          endereco: fullAddress
+        }))
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error)
+    } finally {
+      setIsLoadingCep(false)
+    }
+  }
+
+  // Função para validar CPF
+  const validateCPF = (cpf: string): boolean => {
+    cpf = cpf.replace(/[^\d]+/g, '')
+    if (cpf.length !== 11 || !!cpf.match(/(\d)\1{10}/)) return false
+    
+    const cpfDigits = cpf.split('').map(el => +el)
+    const rest = (count: number): number => {
+      return (cpfDigits.slice(0, count-12)
+        .reduce((soma, el, index) => (soma + el * (count-index)), 0) * 10) % 11 % 10
+    }
+    return rest(10) === cpfDigits[9] && rest(11) === cpfDigits[10]
+  }
+
+  // Função para validar CNPJ
+  const validateCNPJ = (cnpj: string): boolean => {
+    cnpj = cnpj.replace(/[^\d]+/g, '')
+    if (cnpj.length !== 14) return false
+    
+    // Elimina CNPJs inválidos conhecidos
+    if (cnpj === "00000000000000" || 
+        cnpj === "11111111111111" || 
+        cnpj === "22222222222222") return false
+
+    // Valida DVs
+    let tamanho = cnpj.length - 2
+    let numeros = cnpj.substring(0, tamanho)
+    const digitos = cnpj.substring(tamanho)
+    let soma = 0
+    let pos = tamanho - 7
+    
+    for (let i = tamanho; i >= 1; i--) {
+      soma += +numeros.charAt(tamanho - i) * pos--
+      if (pos < 2) pos = 9
+    }
+    
+    let resultado = soma % 11 < 2 ? 0 : 11 - soma % 11
+    if (resultado !== +digitos.charAt(0)) return false
+    
+    tamanho = tamanho + 1
+    numeros = cnpj.substring(0, tamanho)
+    soma = 0
+    pos = tamanho - 7
+    
+    for (let i = tamanho; i >= 1; i--) {
+      soma += +numeros.charAt(tamanho - i) * pos--
+      if (pos < 2) pos = 9
+    }
+    
+    resultado = soma % 11 < 2 ? 0 : 11 - soma % 11
+    return resultado === +digitos.charAt(1)
+  }
+
+  // Função para formatar CPF/CNPJ
+  const formatCpfCnpj = (value: string): string => {
+    const cleanValue = value.replace(/\D/g, '')
+    
+    if (cleanValue.length <= 11) {
+      // CPF
+      return cleanValue
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+        .replace(/(-\d{2})\d+?$/, '$1')
+    } else {
+      // CNPJ
+      return cleanValue
+        .replace(/(\d{2})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1/$2')
+        .replace(/(\d{4})(\d{1,2})/, '$1-$2')
+        .replace(/(-\d{2})\d+?$/, '$1')
+    }
+  }
+
+  // Função para formatar telefone
+  const formatPhone = (value: string): string => {
+    const cleanValue = value.replace(/\D/g, '')
+    return cleanValue
+      .replace(/(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .replace(/(-\d{4})\d+?$/, '$1')
+  }
+
+  // Função para formatar CEP
+  const formatCEP = (value: string): string => {
+    const cleanValue = value.replace(/\D/g, '')
+    return cleanValue.replace(/(\d{5})(\d)/, '$1-$2').replace(/(-\d{3})\d+?$/, '$1')
+  }
+
+  // Função para validar formulário
+  const validateCreateForm = (): boolean => {
+    const errors: {[key: string]: string} = {}
+    
+    if (!createForm.nome.trim()) {
+      errors.nome = "Nome é obrigatório"
+    }
+    
+    if (!createForm.cpfCnpj.trim()) {
+      errors.cpfCnpj = "CPF/CNPJ é obrigatório"
+    } else {
+      const cleanCpfCnpj = createForm.cpfCnpj.replace(/\D/g, '')
+      if (cleanCpfCnpj.length === 11) {
+        if (!validateCPF(createForm.cpfCnpj)) {
+          errors.cpfCnpj = "CPF inválido"
+        }
+      } else if (cleanCpfCnpj.length === 14) {
+        if (!validateCNPJ(createForm.cpfCnpj)) {
+          errors.cpfCnpj = "CNPJ inválido"
+        }
+      } else {
+        errors.cpfCnpj = "CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos"
+      }
+    }
+    
+    if (!createForm.email.trim()) {
+      errors.email = "E-mail é obrigatório"
+    } else if (!/\S+@\S+\.\S+/.test(createForm.email)) {
+      errors.email = "E-mail inválido"
+    }
+    
+    if (!createForm.celular.trim()) {
+      errors.celular = "Celular é obrigatório"
+    } else if (createForm.celular.replace(/\D/g, '').length < 10) {
+      errors.celular = "Celular deve ter pelo menos 10 dígitos"
+    }
+    
+    if (!createForm.dataNascimento) {
+      errors.dataNascimento = "Data de nascimento é obrigatória"
+    } else {
+      const today = new Date()
+      const birthDate = new Date(createForm.dataNascimento)
+      if (birthDate > today) {
+        errors.dataNascimento = "Data de nascimento não pode ser no futuro"
+      }
+      
+      const age = today.getFullYear() - birthDate.getFullYear()
+      if (age > 120) {
+        errors.dataNascimento = "Data de nascimento inválida"
+      }
+    }
+    
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // Carregar clientes ao montar o componente
+  React.useEffect(() => {
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true
+      loadClients()
+    }
+  }, [])
+
+  const loadClients = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await getClientes()
+      setClients(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao carregar clientes")
+      console.error("Erro ao carregar clientes:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Função de ordenação e filtros (adaptada para dados reais)
   const filteredAndSortedClients = React.useMemo(() => {
     let filtered = clients
-
-    // Filtro por status
-    if (filterStatus !== "todos") {
-      filtered = filtered.filter((client) => client.status.toLowerCase() === filterStatus.toLowerCase())
-    }
 
     // Filtro por busca
     if (searchTerm) {
@@ -224,8 +313,8 @@ export default function ClientsScreen() {
         (client) =>
           client.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
           client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          client.telefone.includes(searchTerm) ||
-          client.cpf.includes(searchTerm),
+          client.celular.includes(searchTerm) ||
+          client.cpfCnpj.includes(searchTerm),
       )
     }
 
@@ -233,22 +322,18 @@ export default function ClientsScreen() {
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "latest":
-          return b.dataCadastro.getTime() - a.dataCadastro.getTime()
+          return (b.id || 0) - (a.id || 0) // Ordenar por ID decrescente
         case "oldest":
-          return a.dataCadastro.getTime() - b.dataCadastro.getTime()
+          return (a.id || 0) - (b.id || 0) // Ordenar por ID crescente
         case "name":
           return a.nome.localeCompare(b.nome)
-        case "services":
-          return b.totalServicos - a.totalServicos
-        case "lastService":
-          return new Date(b.ultimoServico).getTime() - new Date(a.ultimoServico).getTime()
         default:
           return 0
       }
     })
 
     return sorted
-  }, [sortBy, filterStatus, searchTerm])
+  }, [clients, searchTerm, sortBy])
 
   // Paginação
   const totalPages = Math.ceil(filteredAndSortedClients.length / ITEMS_PER_PAGE)
@@ -256,48 +341,87 @@ export default function ClientsScreen() {
   const endIndex = startIndex + ITEMS_PER_PAGE
   const currentClients = filteredAndSortedClients.slice(startIndex, endIndex)
 
-  const handleView = (client: any) => {
-    setSelectedClient(client)
-    setIsViewDialogOpen(true)
+  const handleView = async (client: Cliente) => {
+    try {
+      // Buscar dados atualizados do cliente
+      const clientData = await getClienteById(client.id!)
+      setSelectedClient(clientData)
+      setIsViewDialogOpen(true)
+    } catch (err) {
+      console.error("Erro ao buscar cliente:", err)
+      setSelectedClient(client) // Usar dados locais se a busca falhar
+      setIsViewDialogOpen(true)
+    }
   }
 
-  const handleEdit = (client: any) => {
+  const handleEdit = (client: Cliente) => {
     setSelectedClient(client)
     setEditForm({
+      cpfCnpj: client.cpfCnpj,
       nome: client.nome,
+      celular: client.celular,
       email: client.email,
-      telefone: client.telefone,
-      cpf: client.cpf,
+      dataNascimento: client.dataNascimento,
       endereco: client.endereco,
       cep: client.cep,
-      dataNascimento: client.dataNascimento,
-      status: client.status,
-      observacoes: client.observacoes,
+      observacoes: client.observacoes || "",
+      ativo: client.ativo !== undefined ? client.ativo : true,
     })
     setIsEditDialogOpen(true)
   }
 
-  const handleDelete = (clientId: number) => {
-    console.log("Excluindo cliente:", clientId)
+  const handleDelete = async (clientId: number) => {
+    try {
+      await deleteCliente(clientId)
+      await loadClients() // Recarregar lista após exclusão
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir cliente")
+      console.error("Erro ao excluir cliente:", err)
+    }
   }
 
-  const handleSaveEdit = () => {
-    console.log("Salvando edição:", editForm)
-    setIsEditDialogOpen(false)
+  const handleSaveEdit = async () => {
+    try {
+      if (!selectedClient?.id) return
+      
+      await updateCliente(selectedClient.id, editForm)
+      await loadClients() // Recarregar lista após edição
+      setIsEditDialogOpen(false)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao atualizar cliente")
+      console.error("Erro ao atualizar cliente:", err)
+    }
   }
 
-  const handleCreateClient = () => {
-    console.log("Criando novo cliente")
-    setIsCreateDialogOpen(false)
+  const handleCreateClient = async () => {
+    if (!validateCreateForm()) {
+      return
+    }
+    
+    try {
+      await createCliente(createForm)
+      await loadClients() // Recarregar lista após criação
+      setIsCreateDialogOpen(false)
+      setCreateForm({
+        cpfCnpj: "",
+        nome: "",
+        celular: "",
+        email: "",
+        dataNascimento: "",
+        endereco: "",
+        cep: "",
+        observacoes: "",
+        ativo: true,
+      })
+      setFormErrors({})
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao criar cliente")
+      console.error("Erro ao criar cliente:", err)
+    }
   }
 
-  const getStatusBadge = (status: string) => {
-    return status === "Ativo" ? (
-      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ativo</Badge>
-    ) : (
-      <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Inativo</Badge>
-    )
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR")
@@ -308,7 +432,7 @@ export default function ClientsScreen() {
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+        className="h-8 w-8 p-0 text-blue-600 hover:bg-purple-100"
         onClick={() => handleView(client)}
       >
         <Eye className="h-4 w-4" />
@@ -347,71 +471,213 @@ export default function ClientsScreen() {
   )
 
   return (
-    <div className="flex-1 p-4 sm:p-6 bg-gray-50 min-h-screen ">
+    <div className="flex-1 p-4 sm:p-6  ">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900 mb-4">Clientes</h1>
 
+          {/* Error Alert */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-800 text-sm">{error}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={loadClients}
+                className="mt-2"
+              >
+                Tentar novamente
+              </Button>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto">
+                <Button className="bg-[#5A6ACF] hover:bg-[#5A6ACF] text-white w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   Cadastrar novo cliente
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+              <DialogContent className="sm:max-w-[800px] w-[95vw] sm:w-full max-h-[90vh] sm:max-h-none overflow-y-auto sm:overflow-visible">
                 <DialogHeader>
                   <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
                   <DialogDescription>Preencha os dados para cadastrar um novo cliente.</DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-3 sm:gap-6 py-2 sm:py-4">
+                  {/* Nome e CPF/CNPJ */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="new-nome">Nome Completo</Label>
-                      <Input id="new-nome" placeholder="Nome completo do cliente" />
+                      <Label htmlFor="new-nome">Nome Completo *</Label>
+                      <Input 
+                        id="new-nome" 
+                        placeholder="Nome completo do cliente"
+                        value={createForm.nome}
+                        onChange={(e) => setCreateForm({ ...createForm, nome: e.target.value })}
+                        className={formErrors.nome ? "border-red-500" : ""}
+                      />
+                      <div className="h-5">
+                        {formErrors.nome && (
+                          <p className="text-red-500 text-sm">{formErrors.nome}</p>
+                        )}
+                      </div>
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="new-cpf">CPF</Label>
-                      <Input id="new-cpf" placeholder="000.000.000-00" />
+                      <Label htmlFor="new-cpfCnpj">CPF/CNPJ *</Label>
+                      <Input 
+                        id="new-cpfCnpj" 
+                        placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                        value={createForm.cpfCnpj}
+                        onChange={(e) => {
+                          const formatted = formatCpfCnpj(e.target.value)
+                          setCreateForm({ ...createForm, cpfCnpj: formatted })
+                        }}
+                        className={formErrors.cpfCnpj ? "border-red-500" : ""}
+                        maxLength={18}
+                      />
+                      <div className="h-5">
+                        {formErrors.cpfCnpj && (
+                          <p className="text-red-500 text-sm">{formErrors.cpfCnpj}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+
+                  {/* Email e Telefone */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="new-email">E-mail</Label>
-                      <Input id="new-email" type="email" placeholder="cliente@email.com" />
+                      <Label htmlFor="new-email">E-mail *</Label>
+                      <Input 
+                        id="new-email" 
+                        type="email" 
+                        placeholder="cliente@email.com"
+                        value={createForm.email}
+                        onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                        className={formErrors.email ? "border-red-500" : ""}
+                      />
+                      <div className="h-5">
+                        {formErrors.email && (
+                          <p className="text-red-500 text-sm">{formErrors.email}</p>
+                        )}
+                      </div>
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="new-telefone">Telefone</Label>
-                      <Input id="new-telefone" placeholder="(00) 0 0000-0000" />
+                      <Label htmlFor="new-celular">Celular *</Label>
+                      <Input 
+                        id="new-celular" 
+                        placeholder="(00) 0 0000-0000"
+                        value={createForm.celular}
+                        onChange={(e) => {
+                          const formatted = formatPhone(e.target.value)
+                          setCreateForm({ ...createForm, celular: formatted })
+                        }}
+                        className={formErrors.celular ? "border-red-500" : ""}
+                        maxLength={15}
+                      />
+                      <div className="h-5">
+                        {formErrors.celular && (
+                          <p className="text-red-500 text-sm">{formErrors.celular}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="new-endereco">Endereço Completo</Label>
-                    <Input id="new-endereco" placeholder="Rua, número, bairro, cidade, estado" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+
+                  {/* Data de Nascimento e CEP */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="new-nascimento">Data de Nascimento *</Label>
+                      <Input 
+                        id="new-nascimento" 
+                        type="date"
+                        value={createForm.dataNascimento}
+                        onChange={(e) => setCreateForm({ ...createForm, dataNascimento: e.target.value })}
+                        className={formErrors.dataNascimento ? "border-red-500" : ""}
+                        max={new Date().toISOString().split('T')[0]}
+                      />
+                      <div className="h-5">
+                        {formErrors.dataNascimento && (
+                          <p className="text-red-500 text-sm">{formErrors.dataNascimento}</p>
+                        )}
+                      </div>
+                    </div>
                     <div className="grid gap-2">
                       <Label htmlFor="new-cep">CEP</Label>
-                      <Input id="new-cep" placeholder="00000-000" />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="new-nascimento">Data de Nascimento</Label>
-                      <Input id="new-nascimento" type="date" />
+                      <Input 
+                        id="new-cep" 
+                        placeholder="00000-000"
+                        value={createForm.cep}
+                        onChange={(e) => {
+                          const formatted = formatCEP(e.target.value)
+                          setCreateForm({ ...createForm, cep: formatted })
+                          
+                          // Buscar endereço quando CEP estiver completo
+                          if (formatted.replace(/\D/g, '').length === 8) {
+                            fetchAddressByCep(formatted)
+                          }
+                        }}
+                        maxLength={9}
+                        disabled={isLoadingCep}
+                      />
+                      <div className="h-5">
+                        {isLoadingCep && (
+                          <p className="text-blue-500 text-sm">Buscando endereço...</p>
+                        )}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Endereço */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="new-endereco">Endereço Completo</Label>
+                    <Input 
+                      id="new-endereco" 
+                      placeholder="Rua, número, bairro, cidade, estado"
+                      value={createForm.endereco}
+                      onChange={(e) => setCreateForm({ ...createForm, endereco: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Status */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="new-status">Status</Label>
+                    <Select 
+                      value={createForm.ativo ? "true" : "false"} 
+                      onValueChange={(value) => setCreateForm({ ...createForm, ativo: value === "true" })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">Ativo</SelectItem>
+                        <SelectItem value="false">Inativo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Observações */}
                   <div className="grid gap-2">
                     <Label htmlFor="new-observacoes">Observações</Label>
-                    <Textarea id="new-observacoes" placeholder="Observações sobre o cliente (opcional)" />
+                    <Textarea 
+                      id="new-observacoes" 
+                      placeholder="Observações sobre o cliente (opcional)"
+                      value={createForm.observacoes}
+                      onChange={(e) => setCreateForm({ ...createForm, observacoes: e.target.value })}
+                      rows={3}
+                    />
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4 pb-2 sm:pb-0">
+                  <Button variant="outline" onClick={() => {
+                    setIsCreateDialogOpen(false)
+                    setFormErrors({})
+                  }} className="w-full sm:w-auto">
                     Cancelar
                   </Button>
-                  <Button onClick={handleCreateClient}>Cadastrar Cliente</Button>
+                  <Button onClick={handleCreateClient} className="w-full sm:w-auto">
+                    Cadastrar Cliente
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -467,106 +733,144 @@ export default function ClientsScreen() {
         <div className="hidden md:block bg-white rounded-lg shadow-sm border">
           <Table>
             <TableHeader>
-              <TableRow className="bg-blue-50">
-                <TableHead className="text-blue-700 font-medium">Cliente</TableHead>
-                <TableHead className="text-blue-700 font-medium">Contato</TableHead>
-                <TableHead className="text-blue-700 font-medium">CPF</TableHead>
-                <TableHead className="text-blue-700 font-medium">Serviços</TableHead>
-                <TableHead className="text-blue-700 font-medium">Status</TableHead>
-                <TableHead className="text-blue-700 font-medium w-32">Ações</TableHead>
+              <TableRow className="bg-purple-100">
+                <TableHead className="text-[#707FDD] font-medium">Cliente</TableHead>
+                <TableHead className="text-[#707FDD] font-medium">Contato</TableHead>
+                <TableHead className="text-[#707FDD] font-medium">CPF/CNPJ</TableHead>
+                <TableHead className="text-[#707FDD] font-medium">Data Nascimento</TableHead>
+                <TableHead className="text-[#707FDD] font-medium">Status</TableHead>
+                <TableHead className="text-[#707FDD] font-medium w-32">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentClients.map((client) => (
-                <TableRow key={client.id} className="hover:bg-gray-50">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{client.nome}</p>
-                        <p className="text-sm text-gray-500">
-                          Cadastro: {formatDate(client.dataCadastro.toISOString())}
-                        </p>
-                      </div>
-                    </div>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8">
+                    Carregando clientes...
                   </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1 text-sm">
-                        <Phone className="w-3 h-3 text-gray-400" />
-                        {client.telefone}
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <Mail className="w-3 h-3 text-gray-400" />
-                        {client.email}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{client.cpf}</TableCell>
-                  <TableCell>
-                    <div className="text-center">
-                      <p className="font-medium text-blue-600">{client.totalServicos}</p>
-                      <p className="text-xs text-gray-500">Último: {formatDate(client.ultimoServico)}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(client.status)}</TableCell>
-                  <TableCell>{renderActionButtons(client)}</TableCell>
                 </TableRow>
-              ))}
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-red-600">
+                    {error}
+                  </TableCell>
+                </TableRow>
+              ) : currentClients.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8">
+                    Nenhum cliente encontrado
+                  </TableCell>
+                </TableRow>
+              ) : (
+                currentClients.map((client) => (
+                  <TableRow key={client.id} className="hover:bg-gray-50">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                          <User className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{client.nome}</p>
+                          <p className="text-sm text-gray-500">
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1 text-sm">
+                          <Phone className="w-3 h-3 text-gray-400" />
+                          {client.celular}
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <Mail className="w-3 h-3 text-gray-400" />
+                          {client.email}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{client.cpfCnpj}</TableCell>
+                    <TableCell>
+                      <p className="text-sm">{formatDate(client.dataNascimento)}</p>
+                    </TableCell>
+                    <TableCell>
+                      <span 
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          client.ativo !== false ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {client.ativo !== false ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </TableCell>
+                    <TableCell>{renderActionButtons(client)}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
 
         {/* Mobile Cards */}
         <div className="grid grid-cols-1 gap-4 md:hidden">
-          {currentClients.map((client) => (
-            <div key={client.id} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3 flex-grow">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-blue-600" />
+          {loading ? (
+            <div className="text-center py-8">Carregando clientes...</div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-600">{error}</div>
+          ) : currentClients.length === 0 ? (
+            <div className="text-center py-8">Nenhum cliente encontrado</div>
+          ) : (
+            currentClients.map((client) => (
+              <div key={client.id} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3 flex-grow">
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{client.nome}</p>
+                      <p className="text-sm text-gray-500">{client.cpfCnpj}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{client.nome}</p>
-                    <p className="text-sm text-gray-500">{client.cpf}</p>
+                  {renderActionButtons(client)}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    <span>{client.celular}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <span className="truncate">{client.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    <span className="truncate">{client.endereco}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-400">Status:</span>
+                    <span 
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        client.ativo !== false ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {client.ativo !== false ? 'Ativo' : 'Inativo'}
+                    </span>
                   </div>
                 </div>
-                {renderActionButtons(client)}
-              </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="w-4 h-4 text-gray-400" />
-                  <span>{client.telefone}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="w-4 h-4 text-gray-400" />
-                  <span className="truncate">{client.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <span className="truncate">{client.endereco}</span>
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-500">Data Nascimento</p>
+                    <p className="text-xs">{formatDate(client.dataNascimento)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-500">CEP</p>
+                    <p className="text-xs">{client.cep}</p>
+                  </div>
                 </div>
               </div>
-
-              <div className="flex justify-between items-center pt-2 border-t">
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Serviços</p>
-                  <p className="font-medium text-blue-600">{client.totalServicos}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Status</p>
-                  {getStatusBadge(client.status)}
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Último serviço</p>
-                  <p className="text-xs">{formatDate(client.ultimoServico)}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Pagination */}
@@ -586,7 +890,7 @@ export default function ClientsScreen() {
               variant={currentPage === page ? "default" : "outline"}
               size="sm"
               onClick={() => setCurrentPage(page)}
-              className={currentPage === page ? "bg-blue-600 text-white" : ""}
+              className={currentPage === page ? "bg-[#5A6ACF] text-white" : ""}
             >
               {page}
             </Button>
@@ -608,7 +912,7 @@ export default function ClientsScreen() {
 
         {/* View Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] w-[95vw] sm:w-full max-h-[90vh] sm:max-h-none overflow-y-auto sm:overflow-visible">
             <DialogHeader>
               <DialogTitle>Visualizar Cliente</DialogTitle>
               <DialogDescription>Informações completas do cliente selecionado.</DialogDescription>
@@ -616,21 +920,21 @@ export default function ClientsScreen() {
             {selectedClient && (
               <div className="grid gap-4 py-4">
                 <div className="flex items-center gap-4 pb-4 border-b">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="w-8 h-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
+                    <User className="w-8 h-8 text-purple-600" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">{selectedClient.nome}</h3>
                     <p className="text-sm text-gray-500">
-                      Cliente desde {formatDate(selectedClient.dataCadastro.toISOString())}
+                      ID: {selectedClient.id}
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">CPF</Label>
-                    <p className="text-sm font-mono">{selectedClient.cpf}</p>
+                    <Label className="text-sm font-medium text-gray-500">CPF/CNPJ</Label>
+                    <p className="text-sm font-mono">{selectedClient.cpfCnpj}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Data de Nascimento</Label>
@@ -640,8 +944,8 @@ export default function ClientsScreen() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Telefone</Label>
-                    <p className="text-sm">{selectedClient.telefone}</p>
+                    <Label className="text-sm font-medium text-gray-500">Celular</Label>
+                    <p className="text-sm">{selectedClient.celular}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">E-mail</Label>
@@ -654,24 +958,21 @@ export default function ClientsScreen() {
                   <p className="text-sm">{selectedClient.endereco}</p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">CEP</Label>
                     <p className="text-sm font-mono">{selectedClient.cep}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Total de Serviços</Label>
-                    <p className="text-sm font-medium text-blue-600">{selectedClient.totalServicos}</p>
-                  </div>
-                  <div>
                     <Label className="text-sm font-medium text-gray-500">Status</Label>
-                    <div className="mt-1">{getStatusBadge(selectedClient.status)}</div>
+                    <span 
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        selectedClient.ativo !== false ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {selectedClient.ativo !== false ? 'Ativo' : 'Inativo'}
+                    </span>
                   </div>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Último Serviço</Label>
-                  <p className="text-sm">{formatDate(selectedClient.ultimoServico)}</p>
                 </div>
 
                 {selectedClient.observacoes && (
@@ -682,15 +983,17 @@ export default function ClientsScreen() {
                 )}
               </div>
             )}
-            <DialogFooter>
-              <Button onClick={() => setIsViewDialogOpen(false)}>Fechar</Button>
+            <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4 pb-2 sm:pb-0">
+              <Button onClick={() => setIsViewDialogOpen(false)} className="w-full sm:w-auto">
+                Fechar
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
         {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[700px] w-[95vw] sm:w-full max-h-[90vh] sm:max-h-none overflow-y-auto sm:overflow-visible">
             <DialogHeader>
               <DialogTitle>Editar Cliente</DialogTitle>
               <DialogDescription>Faça as alterações necessárias nos dados do cliente.</DialogDescription>
@@ -706,11 +1009,11 @@ export default function ClientsScreen() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-cpf">CPF</Label>
+                  <Label htmlFor="edit-cpfCnpj">CPF/CNPJ</Label>
                   <Input
-                    id="edit-cpf"
-                    value={editForm.cpf}
-                    onChange={(e) => setEditForm({ ...editForm, cpf: e.target.value })}
+                    id="edit-cpfCnpj"
+                    value={editForm.cpfCnpj}
+                    onChange={(e) => setEditForm({ ...editForm, cpfCnpj: e.target.value })}
                   />
                 </div>
               </div>
@@ -725,11 +1028,11 @@ export default function ClientsScreen() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-telefone">Telefone</Label>
+                  <Label htmlFor="edit-celular">Celular</Label>
                   <Input
-                    id="edit-telefone"
-                    value={editForm.telefone}
-                    onChange={(e) => setEditForm({ ...editForm, telefone: e.target.value })}
+                    id="edit-celular"
+                    value={editForm.celular}
+                    onChange={(e) => setEditForm({ ...editForm, celular: e.target.value })}
                   />
                 </div>
               </div>
@@ -741,14 +1044,27 @@ export default function ClientsScreen() {
                   onChange={(e) => setEditForm({ ...editForm, endereco: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="edit-cep">CEP</Label>
                   <Input
                     id="edit-cep"
                     value={editForm.cep}
-                    onChange={(e) => setEditForm({ ...editForm, cep: e.target.value })}
+                    onChange={(e) => {
+                      const formatted = formatCEP(e.target.value)
+                      setEditForm({ ...editForm, cep: formatted })
+                      
+                      // Buscar endereço quando CEP estiver completo
+                      if (formatted.replace(/\D/g, '').length === 8) {
+                        fetchAddressByCepEdit(formatted)
+                      }
+                    }}
+                    maxLength={9}
+                    disabled={isLoadingCep}
                   />
+                  {isLoadingCep && (
+                    <p className="text-blue-500 text-sm">Buscando endereço...</p>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-nascimento">Data de Nascimento</Label>
@@ -759,21 +1075,21 @@ export default function ClientsScreen() {
                     onChange={(e) => setEditForm({ ...editForm, dataNascimento: e.target.value })}
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-status">Status</Label>
-                  <Select
-                    value={editForm.status}
-                    onValueChange={(value) => setEditForm({ ...editForm, status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Ativo">Ativo</SelectItem>
-                      <SelectItem value="Inativo">Inativo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select 
+                  value={editForm.ativo ? "true" : "false"} 
+                  onValueChange={(value) => setEditForm({ ...editForm, ativo: value === "true" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Ativo</SelectItem>
+                    <SelectItem value="false">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-observacoes">Observações</Label>
@@ -784,11 +1100,13 @@ export default function ClientsScreen() {
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4 pb-2 sm:pb-0">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="w-full sm:w-auto">
                 Cancelar
               </Button>
-              <Button onClick={handleSaveEdit}>Salvar Alterações</Button>
+              <Button onClick={handleSaveEdit} className="w-full sm:w-auto">
+                Salvar Alterações
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

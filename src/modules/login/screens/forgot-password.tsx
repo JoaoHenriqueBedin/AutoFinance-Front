@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ArrowLeft, Mail } from "lucide-react";
-import { forgotPassword } from "../../../services/login-service";
+import { forgotPassword } from "../../../servicos/login-service";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");

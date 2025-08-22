@@ -4,11 +4,12 @@ import {
   Routes,
   Route,
   useLocation,
-  Navigate,
 } from "react-router-dom";
 import { Menu } from "lucide-react";
 
 import Sidebar from "./components/ui/sidebar";
+import LandingPage from "./modules/landing/screens/landing";
+import SignupScreen from "./modules/signup/screens/signup";
 import Login from "./modules/login/screens/login";
 import ForgotPassword from "./modules/login/screens/forgot-password";
 import ResetPassword from "./modules/login/screens/reset-password";
@@ -33,15 +34,17 @@ function App() {
 function MainLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const withSidebar = location.pathname !== "/login" && 
+  const withSidebar = location.pathname !== "/" && 
+                     location.pathname !== "/signup" &&
+                     location.pathname !== "/login" && 
                      location.pathname !== "/forgot-password" && 
                      location.pathname !== "/reset-password";
 
   return (
-    <div className="flex">
+    <div className={withSidebar ? "flex" : ""}>
       {withSidebar && (
         <>
-          {/* Botão “hambúrguer” only mobile */}
+          {/* Botão "hambúrguer" only mobile */}
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-4 md:hidden fixed top-0 left-0 z-50 text-[#707FDD]"
@@ -59,12 +62,13 @@ function MainLayout() {
 
       <div
         className={`
-          flex-1 min-h-screen bg-white transition-margin duration-300
-          ${withSidebar ? "ml-4 p-4" : "ml-4 p-4"}
+          min-h-screen bg-white transition-margin duration-300
+          ${withSidebar ? "flex-1 ml-4 p-4" : "w-full"}
         `}
       >
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/signup" element={<SignupScreen />} />
           <Route
             path="/home"
             element={

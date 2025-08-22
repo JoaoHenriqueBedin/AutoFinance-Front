@@ -11,7 +11,7 @@ import {
   getToken,
   isTokenExpired,
   login,
-} from "../../../services/login-service";
+} from "../../../servicos/login-service";
 
 export default function Login() {
   const [usuario, setUser] = useState("");

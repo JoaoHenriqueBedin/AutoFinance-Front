@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ArrowLeft, Lock, CheckCircle } from "lucide-react";
-import { resetPassword } from "../../../services/login-service";
+import { resetPassword } from "../../../servicos/login-service";
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");

@@ -17,7 +17,7 @@ import {
 import { NavLink } from "react-router-dom";
 import logo from "../../assets/logo.svg";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../../services/login-service";
+import { logout } from "../../servicos/login-service";
 
 type SidebarProps = {
   open: boolean;
@@ -90,7 +90,7 @@ export default function Sidebar({ open, onClose, onLinkClick }: SidebarProps) {
         <button
           onClick={() => {
             logout(); // Remove o token
-            navigate("/login"); // Redireciona para a tela de login
+            navigate("/"); // Redireciona para a landing page
           }}
           className="flex items-center gap-3 py-2 px-2 rounded-md text-sm text-gray-700 hover:bg-[#e4e8f8] transition-all"
         >
