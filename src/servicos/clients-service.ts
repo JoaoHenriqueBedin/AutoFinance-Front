@@ -15,6 +15,7 @@ export interface Cliente {
   endereco: string;
   cep: string;
   ativo?: boolean;
+  status?: string;
 }
 
 // Interface para criação/atualização de cliente (sem ID)
@@ -28,6 +29,7 @@ export interface ClienteInput {
   endereco: string;
   cep: string;
   ativo?: boolean;
+  status?: string;
 }
 
 // Buscar todos os clientes
@@ -56,13 +58,14 @@ export async function getClientes(): Promise<Cliente[]> {
   }
 }
 
-// Buscar cliente por ID
-export async function getClienteById(id: number): Promise<Cliente> {
+// Buscar cliente por CPF/CNPJ
+export async function getClienteById(cpfCnpj: string): Promise<Cliente> {
   try {
-    const response = await apiClient.get(`${API_URL}/${id}`);
+    const encodedCpfCnpj = encodeURIComponent(cpfCnpj)
+    const response = await apiClient.get(`${API_URL}/${encodedCpfCnpj}`);
     return response.data;
   } catch (error: any) {
-    console.error(`Error fetching cliente ${id}:`, error);
+    console.error(`Error fetching cliente ${cpfCnpj}:`, error);
     if (error.response && error.response.status === 404) {
       throw new Error("Cliente não encontrado.");
     }
@@ -88,12 +91,19 @@ export async function createCliente(clienteData: ClienteInput): Promise<Cliente>
 }
 
 // Atualizar cliente existente
-export async function updateCliente(id: number, clienteData: ClienteInput): Promise<Cliente> {
+export async function updateCliente(cpfCnpj: string, clienteData: ClienteInput): Promise<Cliente> {
   try {
-    const response = await apiClient.put(`${API_URL}/${id}`, clienteData);
+    const encodedCpfCnpj = encodeURIComponent(cpfCnpj)
+    console.log(`Atualizando cliente com CPF/CNPJ: ${cpfCnpj}`)
+    console.log(`CPF/CNPJ codificado: ${encodedCpfCnpj}`)
+    console.log('Dados a serem enviados:', clienteData)
+    const response = await apiClient.put(`${API_URL}/${encodedCpfCnpj}`, clienteData);
+    console.log('Resposta da API:', response.data)
     return response.data;
   } catch (error: any) {
     console.error("Error updating cliente:", error);
+    console.error("URL tentada:", `${API_URL}/${encodeURIComponent(cpfCnpj)}`)
+    console.error("Dados enviados:", clienteData)
     if (error.response && error.response.status === 401) {
       throw new Error("Acesso não autorizado. Faça login novamente.");
     }
@@ -105,9 +115,10 @@ export async function updateCliente(id: number, clienteData: ClienteInput): Prom
 }
 
 // Deletar cliente
-export async function deleteCliente(id: number): Promise<void> {
+export async function deleteCliente(cpfCnpj: string): Promise<void> {
   try {
-    await apiClient.delete(`${API_URL}/${id}`);
+    const encodedCpfCnpj = encodeURIComponent(cpfCnpj)
+    await apiClient.delete(`${API_URL}/${encodedCpfCnpj}`);
   } catch (error: any) {
     console.error("Error deleting cliente:", error);
     if (error.response && error.response.status === 401) {

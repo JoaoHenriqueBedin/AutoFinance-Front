@@ -36,7 +36,6 @@ import {
   getClientes, 
   createCliente, 
   updateCliente, 
-  deleteCliente, 
   getClienteById,
   Cliente
 } from "@/servicos/clients-service"
@@ -281,6 +280,17 @@ export default function ClientsScreen() {
     return Object.keys(errors).length === 0
   }
 
+  // Função para limpar erro de um campo específico
+  const clearFieldError = (fieldName: string) => {
+    if (formErrors[fieldName]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[fieldName]
+        return newErrors
+      })
+    }
+  }
+
   // Carregar clientes ao montar o componente
   React.useEffect(() => {
     if (!isInitializedRef.current) {
@@ -344,7 +354,7 @@ export default function ClientsScreen() {
   const handleView = async (client: Cliente) => {
     try {
       // Buscar dados atualizados do cliente
-      const clientData = await getClienteById(client.id!)
+      const clientData = await getClienteById(client.cpfCnpj)
       setSelectedClient(clientData)
       setIsViewDialogOpen(true)
     } catch (err) {
@@ -370,21 +380,46 @@ export default function ClientsScreen() {
     setIsEditDialogOpen(true)
   }
 
-  const handleDelete = async (clientId: number) => {
+  const handleToggleStatus = async (clientId: number, isCurrentlyActive: boolean) => {
     try {
-      await deleteCliente(clientId)
-      await loadClients() // Recarregar lista após exclusão
+      // Buscar o cliente atual da lista
+      const currentClient = clients.find(c => c.id === clientId)
+      if (!currentClient || !currentClient.cpfCnpj) return
+      
+      const newStatus = !isCurrentlyActive ? "ATIVO" : "INATIVO"
+      
+      const updatedClient = {
+        cpfCnpj: currentClient.cpfCnpj,
+        nome: currentClient.nome,
+        celular: currentClient.celular,
+        email: currentClient.email,
+        dataNascimento: currentClient.dataNascimento,
+        observacoes: currentClient.observacoes || "",
+        endereco: currentClient.endereco,
+        cep: currentClient.cep,
+        ativo: !isCurrentlyActive,
+        status: newStatus
+      }
+      
+      console.log('Atualizando status do cliente:', updatedClient)
+      await updateCliente(currentClient.cpfCnpj, updatedClient)
+      await loadClients() // Recarregar lista após alteração
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao excluir cliente")
-      console.error("Erro ao excluir cliente:", err)
+      setError(err instanceof Error ? err.message : "Erro ao alterar status do cliente")
+      console.error("Erro ao alterar status do cliente:", err)
     }
   }
 
   const handleSaveEdit = async () => {
     try {
-      if (!selectedClient?.id) return
+      if (!selectedClient?.cpfCnpj) return
       
-      await updateCliente(selectedClient.id, editForm)
+      const clientData = {
+        ...editForm,
+        status: editForm.ativo ? "ATIVO" : "INATIVO"
+      }
+      
+      await updateCliente(selectedClient.cpfCnpj, clientData)
       await loadClients() // Recarregar lista após edição
       setIsEditDialogOpen(false)
       setError(null)
@@ -400,7 +435,12 @@ export default function ClientsScreen() {
     }
     
     try {
-      await createCliente(createForm)
+      const clientData = {
+        ...createForm,
+        status: createForm.ativo ? "ATIVO" : "INATIVO"
+      }
+      
+      await createCliente(clientData)
       await loadClients() // Recarregar lista após criação
       setIsCreateDialogOpen(false)
       setCreateForm({
@@ -447,22 +487,41 @@ export default function ClientsScreen() {
       </Button>
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:bg-red-50">
-            <Trash2 className="h-4 w-4" />
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={`h-8 w-8 p-0 ${
+              client.ativo !== false 
+                ? "text-orange-600 hover:bg-orange-50" 
+                : "text-green-600 hover:bg-green-50"
+            }`}
+          >
+            {client.ativo !== false ? (
+              <Trash2 className="h-4 w-4" />
+            ) : (
+              <User className="h-4 w-4" />
+            )}
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogTitle>
+              {client.ativo !== false ? "Inativar Cliente" : "Ativar Cliente"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o cliente "{client.nome}"? Esta ação não pode ser desfeita e removerá todo
-              o histórico do cliente.
+              {client.ativo !== false 
+                ? `Tem certeza que deseja inativar o cliente "${client.nome}"? O cliente ficará inativo no sistema.`
+                : `Tem certeza que deseja ativar o cliente "${client.nome}"? O cliente ficará ativo no sistema.`
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleDelete(client.id)} className="bg-red-600 hover:bg-red-700">
-              Excluir
+            <AlertDialogAction 
+              onClick={() => handleToggleStatus(client.id, client.ativo !== false)} 
+              className={client.ativo !== false ? "bg-orange-600 hover:bg-orange-700" : "bg-green-600 hover:bg-green-700"}
+            >
+              {client.ativo !== false ? "Inativar" : "Ativar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -501,7 +560,7 @@ export default function ClientsScreen() {
                   Cadastrar novo cliente
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[800px] w-[95vw] sm:w-full max-h-[90vh] sm:max-h-none overflow-y-auto sm:overflow-visible">
+              <DialogContent className="sm:max-w-[500px] w-[95vw] sm:w-full max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
                   <DialogDescription>Preencha os dados para cadastrar um novo cliente.</DialogDescription>
@@ -515,7 +574,10 @@ export default function ClientsScreen() {
                         id="new-nome" 
                         placeholder="Nome completo do cliente"
                         value={createForm.nome}
-                        onChange={(e) => setCreateForm({ ...createForm, nome: e.target.value })}
+                        onChange={(e) => {
+                          setCreateForm({ ...createForm, nome: e.target.value })
+                          clearFieldError('nome')
+                        }}
                         className={formErrors.nome ? "border-red-500" : ""}
                       />
                       <div className="h-5">
@@ -533,6 +595,7 @@ export default function ClientsScreen() {
                         onChange={(e) => {
                           const formatted = formatCpfCnpj(e.target.value)
                           setCreateForm({ ...createForm, cpfCnpj: formatted })
+                          clearFieldError('cpfCnpj')
                         }}
                         className={formErrors.cpfCnpj ? "border-red-500" : ""}
                         maxLength={18}
@@ -554,7 +617,10 @@ export default function ClientsScreen() {
                         type="email" 
                         placeholder="cliente@email.com"
                         value={createForm.email}
-                        onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                        onChange={(e) => {
+                          setCreateForm({ ...createForm, email: e.target.value })
+                          clearFieldError('email')
+                        }}
                         className={formErrors.email ? "border-red-500" : ""}
                       />
                       <div className="h-5">
@@ -572,6 +638,7 @@ export default function ClientsScreen() {
                         onChange={(e) => {
                           const formatted = formatPhone(e.target.value)
                           setCreateForm({ ...createForm, celular: formatted })
+                          clearFieldError('celular')
                         }}
                         className={formErrors.celular ? "border-red-500" : ""}
                         maxLength={15}
@@ -592,7 +659,10 @@ export default function ClientsScreen() {
                         id="new-nascimento" 
                         type="date"
                         value={createForm.dataNascimento}
-                        onChange={(e) => setCreateForm({ ...createForm, dataNascimento: e.target.value })}
+                        onChange={(e) => {
+                          setCreateForm({ ...createForm, dataNascimento: e.target.value })
+                          clearFieldError('dataNascimento')
+                        }}
                         className={formErrors.dataNascimento ? "border-red-500" : ""}
                         max={new Date().toISOString().split('T')[0]}
                       />
@@ -611,6 +681,7 @@ export default function ClientsScreen() {
                         onChange={(e) => {
                           const formatted = formatCEP(e.target.value)
                           setCreateForm({ ...createForm, cep: formatted })
+                          clearFieldError('cep')
                           
                           // Buscar endereço quando CEP estiver completo
                           if (formatted.replace(/\D/g, '').length === 8) {
@@ -912,7 +983,7 @@ export default function ClientsScreen() {
 
         {/* View Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="sm:max-w-[600px] w-[95vw] sm:w-full max-h-[90vh] sm:max-h-none overflow-y-auto sm:overflow-visible">
+          <DialogContent className="sm:max-w-[600px] w-[95vw] sm:w-full max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Visualizar Cliente</DialogTitle>
               <DialogDescription>Informações completas do cliente selecionado.</DialogDescription>
@@ -993,7 +1064,7 @@ export default function ClientsScreen() {
 
         {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[700px] w-[95vw] sm:w-full max-h-[90vh] sm:max-h-none overflow-y-auto sm:overflow-visible">
+          <DialogContent className="sm:max-w-[700px] w-[95vw] sm:w-full max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Editar Cliente</DialogTitle>
               <DialogDescription>Faça as alterações necessárias nos dados do cliente.</DialogDescription>
