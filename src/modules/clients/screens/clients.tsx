@@ -3,6 +3,7 @@
 
 import * as React from "react"
 import { Eye, Edit, Trash2, Plus, Search, ChevronLeft, ChevronRight, User, Phone, Mail, MapPin } from "lucide-react"
+import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -236,7 +237,16 @@ export default function ClientsScreen() {
       errors.cpfCnpj = "CPF/CNPJ é obrigatório"
     } else {
       const cleanCpfCnpj = createForm.cpfCnpj.replace(/\D/g, '')
-      if (cleanCpfCnpj.length === 11) {
+      
+      // Verificar se já existe um cliente com este CPF/CNPJ
+      const existingClient = clients.find(client => 
+        client.cpfCnpj.replace(/\D/g, '') === cleanCpfCnpj
+      )
+      
+      if (existingClient) {
+        errors.cpfCnpj = "Já existe um cliente cadastrado com este CPF/CNPJ"
+        toast.error("Já existe um cliente cadastrado com este CPF/CNPJ.")
+      } else if (cleanCpfCnpj.length === 11) {
         if (!validateCPF(createForm.cpfCnpj)) {
           errors.cpfCnpj = "CPF inválido"
         }
@@ -291,6 +301,68 @@ export default function ClientsScreen() {
     }
   }
 
+  // Função para limpar o formulário de criação
+  const clearCreateForm = () => {
+    setCreateForm({
+      cpfCnpj: "",
+      nome: "",
+      celular: "",
+      email: "",
+      dataNascimento: "",
+      endereco: "",
+      cep: "",
+      observacoes: "",
+      ativo: true,
+    })
+    setFormErrors({})
+  }
+
+  // Função para validar formulário de edição
+  const validateEditForm = (): boolean => {
+    const errors: {[key: string]: string} = {}
+    
+    if (!editForm.nome.trim()) {
+      errors.nome = "Nome é obrigatório"
+    }
+    
+    // CPF/CNPJ não é validado na edição pois não pode ser alterado
+    
+    if (!editForm.email.trim()) {
+      errors.email = "E-mail é obrigatório"
+    } else if (!/\S+@\S+\.\S+/.test(editForm.email)) {
+      errors.email = "E-mail inválido"
+    }
+    
+    if (!editForm.celular.trim()) {
+      errors.celular = "Celular é obrigatório"
+    } else if (editForm.celular.replace(/\D/g, '').length < 10) {
+      errors.celular = "Celular deve ter pelo menos 10 dígitos"
+    }
+    
+    // Validar data de nascimento apenas se estiver vazia ou tiver sido alterada
+    const originalDate = selectedClient?.dataNascimento
+    const currentDate = editForm.dataNascimento
+    const dateChanged = originalDate !== currentDate
+    
+    if (!editForm.dataNascimento && dateChanged) {
+      errors.dataNascimento = "Data de nascimento é obrigatória"
+    } else if (editForm.dataNascimento) {
+      const today = new Date()
+      const birthDate = new Date(editForm.dataNascimento)
+      if (birthDate > today) {
+        errors.dataNascimento = "Data de nascimento não pode ser no futuro"
+      }
+      
+      const age = today.getFullYear() - birthDate.getFullYear()
+      if (age > 120) {
+        errors.dataNascimento = "Data de nascimento inválida"
+      }
+    }
+    
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   // Carregar clientes ao montar o componente
   React.useEffect(() => {
     if (!isInitializedRef.current) {
@@ -317,6 +389,18 @@ export default function ClientsScreen() {
   const filteredAndSortedClients = React.useMemo(() => {
     let filtered = clients
 
+    // Filtro por status
+    if (filterStatus !== "todos") {
+      filtered = filtered.filter(client => {
+        if (filterStatus === "ativo") {
+          return client.status === "ATIVO"
+        } else if (filterStatus === "inativo") {
+          return client.status === "INATIVO"
+        }
+        return true
+      })
+    }
+
     // Filtro por busca
     if (searchTerm) {
       filtered = filtered.filter(
@@ -332,18 +416,26 @@ export default function ClientsScreen() {
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "latest":
-          return (b.id || 0) - (a.id || 0) // Ordenar por ID decrescente
+          return (b.id || 0) - (a.id || 0) // Ordenar por ID decrescente (mais recentes)
         case "oldest":
-          return (a.id || 0) - (b.id || 0) // Ordenar por ID crescente
+          return (a.id || 0) - (b.id || 0) // Ordenar por ID crescente (mais antigos)
         case "name":
-          return a.nome.localeCompare(b.nome)
+          return a.nome.localeCompare(b.nome) // Ordenar por nome A-Z
+        case "services":
+          // Para "Mais serviços" vamos ordenar por ID por enquanto
+          // TODO: Implementar quando houver dados de serviços
+          return (b.id || 0) - (a.id || 0)
+        case "lastService":
+          // Para "Último serviço" vamos ordenar por ID por enquanto  
+          // TODO: Implementar quando houver dados de serviços
+          return (b.id || 0) - (a.id || 0)
         default:
           return 0
       }
     })
 
     return sorted
-  }, [clients, searchTerm, sortBy])
+  }, [clients, searchTerm, sortBy, filterStatus])
 
   // Paginação
   const totalPages = Math.ceil(filteredAndSortedClients.length / ITEMS_PER_PAGE)
@@ -366,19 +458,27 @@ export default function ClientsScreen() {
 
   const handleEdit = (client: Cliente) => {
     setSelectedClient(client)
-    setEditForm({
-      cpfCnpj: client.cpfCnpj,
-      nome: client.nome,
-      celular: client.celular,
-      email: client.email,
-      dataNascimento: client.dataNascimento,
-      endereco: client.endereco,
-      cep: client.cep,
-      observacoes: client.observacoes || "",
-      ativo: client.ativo !== undefined ? client.ativo : true,
-    })
     setIsEditDialogOpen(true)
   }
+
+  // useEffect para preencher o formulário quando selectedClient mudar
+  React.useEffect(() => {
+    if (selectedClient && isEditDialogOpen) {
+      setEditForm({
+        cpfCnpj: selectedClient.cpfCnpj,
+        nome: selectedClient.nome,
+        celular: selectedClient.celular,
+        email: selectedClient.email,
+        dataNascimento: selectedClient.dataNascimento,
+        endereco: selectedClient.endereco,
+        cep: selectedClient.cep,
+        observacoes: selectedClient.observacoes || "",
+        ativo: selectedClient.status !== 'INATIVO',
+      })
+      // Limpar erros quando abrir o modal de edição
+      setFormErrors({})
+    }
+  }, [selectedClient, isEditDialogOpen])
 
   const handleToggleStatus = async (clientId: number, isCurrentlyActive: boolean) => {
     try {
@@ -386,7 +486,8 @@ export default function ClientsScreen() {
       const currentClient = clients.find(c => c.id === clientId)
       if (!currentClient || !currentClient.cpfCnpj) return
       
-      const newStatus = !isCurrentlyActive ? "ATIVO" : "INATIVO"
+      const newStatus = isCurrentlyActive ? "INATIVO" : "ATIVO"
+      const newAtivo = !isCurrentlyActive
       
       const updatedClient = {
         cpfCnpj: currentClient.cpfCnpj,
@@ -397,20 +498,27 @@ export default function ClientsScreen() {
         observacoes: currentClient.observacoes || "",
         endereco: currentClient.endereco,
         cep: currentClient.cep,
-        ativo: !isCurrentlyActive,
+        ativo: newAtivo,
         status: newStatus
       }
       
       console.log('Atualizando status do cliente:', updatedClient)
       await updateCliente(currentClient.cpfCnpj, updatedClient)
       await loadClients() // Recarregar lista após alteração
+      toast.success(`Cliente ${newStatus.toLowerCase()} com sucesso!`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao alterar status do cliente")
+      const errorMessage = err instanceof Error ? err.message : "Erro ao alterar status do cliente"
+      setError(errorMessage)
       console.error("Erro ao alterar status do cliente:", err)
+      toast.error(errorMessage)
     }
   }
 
   const handleSaveEdit = async () => {
+    if (!validateEditForm()) {
+      return
+    }
+    
     try {
       if (!selectedClient?.cpfCnpj) return
       
@@ -419,13 +527,31 @@ export default function ClientsScreen() {
         status: editForm.ativo ? "ATIVO" : "INATIVO"
       }
       
-      await updateCliente(selectedClient.cpfCnpj, clientData)
-      await loadClients() // Recarregar lista após edição
+      const updatedClient = await updateCliente(selectedClient.cpfCnpj, clientData)
+      
+      // Atualizar o cliente na lista local imediatamente
+      setClients(prevClients => 
+        prevClients.map(client => 
+          client.cpfCnpj === selectedClient.cpfCnpj 
+            ? { ...updatedClient, id: client.id } // Manter o ID original
+            : client
+        )
+      )
+      
+      // Também recarregar a lista completa após um delay
+      setTimeout(async () => {
+        await loadClients()
+      }, 1000)
+      
       setIsEditDialogOpen(false)
+      setFormErrors({}) // Limpar erros após sucesso
       setError(null)
+      toast.success("Cliente atualizado com sucesso!")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao atualizar cliente")
+      const errorMessage = err instanceof Error ? err.message : "Erro ao atualizar cliente"
+      setError(errorMessage)
       console.error("Erro ao atualizar cliente:", err)
+      toast.error(errorMessage)
     }
   }
 
@@ -456,9 +582,18 @@ export default function ClientsScreen() {
       })
       setFormErrors({})
       setError(null)
+      toast.success("Cliente criado com sucesso!")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao criar cliente")
+      const errorMessage = err instanceof Error ? err.message : "Erro ao criar cliente"
+      setError(errorMessage)
       console.error("Erro ao criar cliente:", err)
+      
+      // Exibir toast de erro
+      if (errorMessage.includes("Já existe um cliente cadastrado com este CPF/CNPJ")) {
+        toast.error("Já existe um cliente cadastrado com este CPF/CNPJ.")
+      } else {
+        toast.error(errorMessage)
+      }
     }
   }
 
@@ -491,37 +626,37 @@ export default function ClientsScreen() {
             variant="ghost" 
             size="sm" 
             className={`h-8 w-8 p-0 ${
-              client.ativo !== false 
-                ? "text-orange-600 hover:bg-orange-50" 
-                : "text-green-600 hover:bg-green-50"
+              client.status === 'INATIVO'
+                ? "text-green-600 hover:bg-green-50" 
+                : "text-orange-600 hover:bg-orange-50"
             }`}
           >
-            {client.ativo !== false ? (
-              <Trash2 className="h-4 w-4" />
-            ) : (
+            {client.status === 'INATIVO' ? (
               <User className="h-4 w-4" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
             )}
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {client.ativo !== false ? "Inativar Cliente" : "Ativar Cliente"}
+              {client.status === 'INATIVO' ? "Ativar Cliente" : "Inativar Cliente"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {client.ativo !== false 
-                ? `Tem certeza que deseja inativar o cliente "${client.nome}"? O cliente ficará inativo no sistema.`
-                : `Tem certeza que deseja ativar o cliente "${client.nome}"? O cliente ficará ativo no sistema.`
+              {client.status === 'INATIVO'
+                ? `Tem certeza que deseja ativar o cliente "${client.nome}"? O cliente ficará ativo no sistema.`
+                : `Tem certeza que deseja inativar o cliente "${client.nome}"? O cliente ficará inativo no sistema.`
               }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={() => handleToggleStatus(client.id, client.ativo !== false)} 
-              className={client.ativo !== false ? "bg-orange-600 hover:bg-orange-700" : "bg-green-600 hover:bg-green-700"}
+              onClick={() => handleToggleStatus(client.id, client.status !== 'INATIVO')} 
+              className={client.status === 'INATIVO' ? "bg-green-600 hover:bg-green-700" : "bg-orange-600 hover:bg-orange-700"}
             >
-              {client.ativo !== false ? "Inativar" : "Ativar"}
+              {client.status === 'INATIVO' ? "Ativar" : "Inativar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -553,7 +688,12 @@ export default function ClientsScreen() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+              setIsCreateDialogOpen(open)
+              if (open) {
+                clearCreateForm() // Limpar formulário ao abrir o modal
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button className="bg-[#5A6ACF] hover:bg-[#5A6ACF] text-white w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
@@ -580,9 +720,9 @@ export default function ClientsScreen() {
                         }}
                         className={formErrors.nome ? "border-red-500" : ""}
                       />
-                      <div className="h-5">
+                      <div className="min-h-[1.25rem]">
                         {formErrors.nome && (
-                          <p className="text-red-500 text-sm">{formErrors.nome}</p>
+                          <p className="text-red-500 text-sm break-words">{formErrors.nome}</p>
                         )}
                       </div>
                     </div>
@@ -600,9 +740,9 @@ export default function ClientsScreen() {
                         className={formErrors.cpfCnpj ? "border-red-500" : ""}
                         maxLength={18}
                       />
-                      <div className="h-5">
+                      <div className="min-h-[1.25rem]">
                         {formErrors.cpfCnpj && (
-                          <p className="text-red-500 text-sm">{formErrors.cpfCnpj}</p>
+                          <p className="text-red-500 text-sm break-words">{formErrors.cpfCnpj}</p>
                         )}
                       </div>
                     </div>
@@ -623,9 +763,9 @@ export default function ClientsScreen() {
                         }}
                         className={formErrors.email ? "border-red-500" : ""}
                       />
-                      <div className="h-5">
+                      <div className="min-h-[1.25rem]">
                         {formErrors.email && (
-                          <p className="text-red-500 text-sm">{formErrors.email}</p>
+                          <p className="text-red-500 text-sm break-words">{formErrors.email}</p>
                         )}
                       </div>
                     </div>
@@ -643,9 +783,9 @@ export default function ClientsScreen() {
                         className={formErrors.celular ? "border-red-500" : ""}
                         maxLength={15}
                       />
-                      <div className="h-5">
+                      <div className="min-h-[1.25rem]">
                         {formErrors.celular && (
-                          <p className="text-red-500 text-sm">{formErrors.celular}</p>
+                          <p className="text-red-500 text-sm break-words">{formErrors.celular}</p>
                         )}
                       </div>
                     </div>
@@ -666,9 +806,9 @@ export default function ClientsScreen() {
                         className={formErrors.dataNascimento ? "border-red-500" : ""}
                         max={new Date().toISOString().split('T')[0]}
                       />
-                      <div className="h-5">
+                      <div className="min-h-[1.25rem]">
                         {formErrors.dataNascimento && (
-                          <p className="text-red-500 text-sm">{formErrors.dataNascimento}</p>
+                          <p className="text-red-500 text-sm break-words">{formErrors.dataNascimento}</p>
                         )}
                       </div>
                     </div>
@@ -691,7 +831,7 @@ export default function ClientsScreen() {
                         maxLength={9}
                         disabled={isLoadingCep}
                       />
-                      <div className="h-5">
+                      <div className="min-h-[1.25rem]">
                         {isLoadingCep && (
                           <p className="text-blue-500 text-sm">Buscando endereço...</p>
                         )}
@@ -742,7 +882,7 @@ export default function ClientsScreen() {
                 <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4 pb-2 sm:pb-0">
                   <Button variant="outline" onClick={() => {
                     setIsCreateDialogOpen(false)
-                    setFormErrors({})
+                    clearCreateForm()
                   }} className="w-full sm:w-auto">
                     Cancelar
                   </Button>
@@ -866,10 +1006,10 @@ export default function ClientsScreen() {
                     <TableCell>
                       <span 
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          client.ativo !== false ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          client.status === 'INATIVO' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                         }`}
                       >
-                        {client.ativo !== false ? 'Ativo' : 'Inativo'}
+                        {client.status === 'INATIVO' ? 'INATIVO' : 'ATIVO'}
                       </span>
                     </TableCell>
                     <TableCell>{renderActionButtons(client)}</TableCell>
@@ -921,10 +1061,10 @@ export default function ClientsScreen() {
                     <span className="text-gray-400">Status:</span>
                     <span 
                       className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        client.ativo !== false ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        client.status === 'INATIVO' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                       }`}
                     >
-                      {client.ativo !== false ? 'Ativo' : 'Inativo'}
+                      {client.status === 'INATIVO' ? 'INATIVO' : 'ATIVO'}
                     </span>
                   </div>
                 </div>
@@ -1038,10 +1178,10 @@ export default function ClientsScreen() {
                     <Label className="text-sm font-medium text-gray-500">Status</Label>
                     <span 
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        selectedClient.ativo !== false ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        selectedClient.status === 'INATIVO' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                       }`}
                     >
-                      {selectedClient.ativo !== false ? 'Ativo' : 'Inativo'}
+                      {selectedClient.status === 'INATIVO' ? 'INATIVO' : 'ATIVO'}
                     </span>
                   </div>
                 </div>
@@ -1076,16 +1216,31 @@ export default function ClientsScreen() {
                   <Input
                     id="edit-nome"
                     value={editForm.nome}
-                    onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })}
+                    onChange={(e) => {
+                      setEditForm({ ...editForm, nome: e.target.value })
+                      clearFieldError('nome')
+                    }}
                   />
+                  <div className="min-h-6">
+                    {formErrors.nome && (
+                      <p className="text-red-500 text-xs mt-1 break-words">{formErrors.nome}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-cpfCnpj">CPF/CNPJ</Label>
                   <Input
                     id="edit-cpfCnpj"
                     value={editForm.cpfCnpj}
-                    onChange={(e) => setEditForm({ ...editForm, cpfCnpj: e.target.value })}
+                    disabled={true}
+                    className="bg-gray-50 cursor-not-allowed"
                   />
+                  <p className="text-xs text-gray-500">CPF/CNPJ não pode ser alterado após o cadastro</p>
+                  <div className="min-h-6">
+                    {formErrors.cpfCnpj && (
+                      <p className="text-red-500 text-xs mt-1 break-words">{formErrors.cpfCnpj}</p>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1095,16 +1250,34 @@ export default function ClientsScreen() {
                     id="edit-email"
                     type="email"
                     value={editForm.email}
-                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    onChange={(e) => {
+                      setEditForm({ ...editForm, email: e.target.value })
+                      clearFieldError('email')
+                    }}
                   />
+                  <div className="min-h-6">
+                    {formErrors.email && (
+                      <p className="text-red-500 text-xs mt-1 break-words">{formErrors.email}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-celular">Celular</Label>
                   <Input
                     id="edit-celular"
                     value={editForm.celular}
-                    onChange={(e) => setEditForm({ ...editForm, celular: e.target.value })}
+                    onChange={(e) => {
+                      const formatted = formatPhone(e.target.value)
+                      setEditForm({ ...editForm, celular: formatted })
+                      clearFieldError('celular')
+                    }}
+                    maxLength={15}
                   />
+                  <div className="min-h-6">
+                    {formErrors.celular && (
+                      <p className="text-red-500 text-xs mt-1 break-words">{formErrors.celular}</p>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="grid gap-2">
@@ -1124,6 +1297,7 @@ export default function ClientsScreen() {
                     onChange={(e) => {
                       const formatted = formatCEP(e.target.value)
                       setEditForm({ ...editForm, cep: formatted })
+                      clearFieldError('cep')
                       
                       // Buscar endereço quando CEP estiver completo
                       if (formatted.replace(/\D/g, '').length === 8) {
@@ -1133,9 +1307,14 @@ export default function ClientsScreen() {
                     maxLength={9}
                     disabled={isLoadingCep}
                   />
-                  {isLoadingCep && (
-                    <p className="text-blue-500 text-sm">Buscando endereço...</p>
-                  )}
+                  <div className="min-h-6">
+                    {isLoadingCep && (
+                      <p className="text-blue-500 text-xs">Buscando endereço...</p>
+                    )}
+                    {formErrors.cep && (
+                      <p className="text-red-500 text-xs mt-1 break-words">{formErrors.cep}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-nascimento">Data de Nascimento</Label>
@@ -1143,8 +1322,16 @@ export default function ClientsScreen() {
                     id="edit-nascimento"
                     type="date"
                     value={editForm.dataNascimento}
-                    onChange={(e) => setEditForm({ ...editForm, dataNascimento: e.target.value })}
+                    onChange={(e) => {
+                      setEditForm({ ...editForm, dataNascimento: e.target.value })
+                      clearFieldError('dataNascimento')
+                    }}
                   />
+                  <div className="min-h-6">
+                    {formErrors.dataNascimento && (
+                      <p className="text-red-500 text-xs mt-1 break-words">{formErrors.dataNascimento}</p>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="grid gap-2">

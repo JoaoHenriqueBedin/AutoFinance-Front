@@ -36,7 +36,13 @@ export interface ClienteInput {
 export async function getClientes(): Promise<Cliente[]> {
   try {
     console.log("Fazendo requisição para:", API_URL);
-    const response = await apiClient.get(API_URL);
+    const response = await apiClient.get(`${API_URL}?_t=${Date.now()}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
     console.log("Resposta recebida:", response.status);
     return response.data;
   } catch (error: any) {
@@ -86,6 +92,17 @@ export async function createCliente(clienteData: ClienteInput): Promise<Cliente>
     if (error.response && error.response.status === 401) {
       throw new Error("Acesso não autorizado. Faça login novamente.");
     }
+    if (error.response && error.response.status === 409) {
+      throw new Error("Já existe um cliente cadastrado com este CPF/CNPJ.");
+    }
+    if (error.response && error.response.status === 400) {
+      // Verifica se a mensagem de erro contém informações sobre CPF/CNPJ duplicado
+      const errorMessage = error.response.data?.message || error.response.data?.error || "";
+      if (errorMessage.toLowerCase().includes("cpf") || errorMessage.toLowerCase().includes("cnpj") || 
+          errorMessage.toLowerCase().includes("já existe") || errorMessage.toLowerCase().includes("duplicado")) {
+        throw new Error("Já existe um cliente cadastrado com este CPF/CNPJ.");
+      }
+    }
     throw new Error("Erro ao criar cliente. Tente novamente.");
   }
 }
@@ -97,6 +114,13 @@ export async function updateCliente(cpfCnpj: string, clienteData: ClienteInput):
     console.log(`Atualizando cliente com CPF/CNPJ: ${cpfCnpj}`)
     console.log(`CPF/CNPJ codificado: ${encodedCpfCnpj}`)
     console.log('Dados a serem enviados:', clienteData)
+    
+    // Importante: Se o CPF/CNPJ foi alterado, isso pode causar problemas
+    // pois estamos usando o CPF/CNPJ antigo na URL
+    if (clienteData.cpfCnpj !== cpfCnpj) {
+      console.warn('ATENÇÃO: CPF/CNPJ foi alterado, mas estamos usando o antigo na URL')
+    }
+    
     const response = await apiClient.put(`${API_URL}/${encodedCpfCnpj}`, clienteData);
     console.log('Resposta da API:', response.data)
     return response.data;
@@ -113,6 +137,29 @@ export async function updateCliente(cpfCnpj: string, clienteData: ClienteInput):
     throw new Error("Erro ao atualizar cliente. Tente novamente.");
   }
 }
+
+// FUNÇÃO ALTERNATIVA: Caso o backend permita mudança de CPF/CNPJ
+// Esta função poderia ser usada se o servidor suportasse identificação por ID
+/*
+export async function updateClienteById(id: number, clienteData: ClienteInput): Promise<Cliente> {
+  try {
+    console.log(`Atualizando cliente com ID: ${id}`)
+    console.log('Dados a serem enviados:', clienteData)
+    const response = await apiClient.put(`${API_URL}/id/${id}`, clienteData);
+    console.log('Resposta da API:', response.data)
+    return response.data;
+  } catch (error: any) {
+    console.error("Error updating cliente by ID:", error);
+    if (error.response && error.response.status === 401) {
+      throw new Error("Acesso não autorizado. Faça login novamente.");
+    }
+    if (error.response && error.response.status === 404) {
+      throw new Error("Cliente não encontrado.");
+    }
+    throw new Error("Erro ao atualizar cliente. Tente novamente.");
+  }
+}
+*/
 
 // Deletar cliente
 export async function deleteCliente(cpfCnpj: string): Promise<void> {
