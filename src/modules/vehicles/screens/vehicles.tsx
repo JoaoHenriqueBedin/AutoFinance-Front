@@ -367,7 +367,7 @@ export default function VehiclesScreen() {
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+        className="h-8 w-8 p-0 text-blue-600 hover:bg-purple-100"
         onClick={() => handleView(vehicle)}
       >
         <Eye className="h-4 w-4" />
@@ -406,7 +406,7 @@ export default function VehiclesScreen() {
   )
 
   return (
-    <div className="flex-1 p-4 sm:p-6 bg-gray-50 min-h-screen">
+    <div className="flex-1 p-4 sm:p-6 min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -416,7 +416,7 @@ export default function VehiclesScreen() {
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto">
+                <Button className="bg-[#5A6ACF] hover:bg-[#5A6ACF] text-white w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   Cadastrar novo veículo
                 </Button>
@@ -604,14 +604,14 @@ export default function VehiclesScreen() {
         <div className="hidden md:block bg-white rounded-lg shadow-sm border">
           <Table>
             <TableHeader>
-              <TableRow className="bg-blue-50">
-                <TableHead className="text-blue-700 font-medium">Veículo</TableHead>
-                <TableHead className="text-blue-700 font-medium">Proprietário</TableHead>
-                <TableHead className="text-blue-700 font-medium">Placa</TableHead>
-                <TableHead className="text-blue-700 font-medium">Ano/KM</TableHead>
-                <TableHead className="text-blue-700 font-medium">Serviços</TableHead>
-                <TableHead className="text-blue-700 font-medium">Status</TableHead>
-                <TableHead className="text-blue-700 font-medium w-32">Ações</TableHead>
+              <TableRow className="bg-purple-100">
+                <TableHead className="text-[#707FDD] font-medium">Veículo</TableHead>
+                <TableHead className="text-[#707FDD] font-medium">Proprietário</TableHead>
+                <TableHead className="text-[#707FDD] font-medium">Placa</TableHead>
+                <TableHead className="text-[#707FDD] font-medium">Ano/KM</TableHead>
+                <TableHead className="text-[#707FDD] font-medium">Serviços</TableHead>
+                <TableHead className="text-[#707FDD] font-medium">Status</TableHead>
+                <TableHead className="text-[#707FDD] font-medium w-32">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -619,8 +619,8 @@ export default function VehiclesScreen() {
                 <TableRow key={vehicle.id} className="hover:bg-gray-50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Car className="w-4 h-4 text-blue-600" />
+                                              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Car className="w-4 h-4 text-[#707FDD]" />
                       </div>
                       <div>
                         <p className="font-medium">
@@ -652,7 +652,7 @@ export default function VehiclesScreen() {
                   </TableCell>
                   <TableCell>
                     <div className="text-center">
-                      <p className="font-medium text-blue-600">{vehicle.totalServicos}</p>
+                      <p className="font-medium text-[#707FDD]">{vehicle.totalServicos}</p>
                       <p className="text-xs text-gray-500">Último: {formatDate(vehicle.ultimaManutencao)}</p>
                     </div>
                   </TableCell>
@@ -670,8 +670,8 @@ export default function VehiclesScreen() {
             <div key={vehicle.id} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3">
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3 flex-grow">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Car className="w-5 h-5 text-blue-600" />
+                                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                    <Car className="w-5 h-5 text-[#707FDD]" />
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
@@ -704,7 +704,7 @@ export default function VehiclesScreen() {
               <div className="flex justify-between items-center pt-2 border-t">
                 <div className="text-center">
                   <p className="text-sm text-gray-500">Serviços</p>
-                  <p className="font-medium text-blue-600">{vehicle.totalServicos}</p>
+                  <p className="font-medium text-[#707FDD]">{vehicle.totalServicos}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-500">Status</p>
@@ -736,7 +736,7 @@ export default function VehiclesScreen() {
               variant={currentPage === page ? "default" : "outline"}
               size="sm"
               onClick={() => setCurrentPage(page)}
-              className={currentPage === page ? "bg-blue-600 text-white" : ""}
+              className={currentPage === page ? "bg-[#5A6ACF] text-white" : ""}
             >
               {page}
             </Button>
@@ -766,8 +766,8 @@ export default function VehiclesScreen() {
             {selectedVehicle && (
               <div className="grid gap-4 py-4">
                 <div className="flex items-center gap-4 pb-4 border-b">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Car className="w-8 h-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
+                    <Car className="w-8 h-8 text-[#707FDD]" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">
@@ -811,7 +811,7 @@ export default function VehiclesScreen() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Total de Serviços</Label>
-                    <p className="text-sm font-medium text-blue-600">{selectedVehicle.totalServicos}</p>
+                    <p className="text-sm font-medium text-[#707FDD]">{selectedVehicle.totalServicos}</p>
                   </div>
                 </div>
 

@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Eye, EyeOff, Building, User, Mail, Phone, MapPin } from "lucide-react"
+import { toast } from "react-toastify"
+import { criarEmpresa, type EmpresaInput } from "@/servicos/empresa-service"
 
 export default function SignupScreen() {
   const [showPassword, setShowPassword] = React.useState(false)
@@ -25,11 +27,76 @@ export default function SignupScreen() {
     confirmPassword: "",
   })
 
+  // Função para validar CNPJ
+  const validateCNPJ = (cnpj: string): boolean => {
+    const cleanCnpj = cnpj.replace(/\D/g, '')
+    
+    if (cleanCnpj.length !== 14) return false
+    
+    // Verificar se todos os dígitos são iguais
+    if (/^(\d)\1{13}$/.test(cleanCnpj)) return false
+    
+    // Validação dos dígitos verificadores
+    let length = cleanCnpj.length - 2
+    let numbers = cleanCnpj.substring(0, length)
+    const digits = cleanCnpj.substring(length)
+    let sum = 0
+    let pos = length - 7
+    
+    for (let i = length; i >= 1; i--) {
+      sum += parseInt(numbers.charAt(length - i)) * pos--
+      if (pos < 2) pos = 9
+    }
+    
+    let result = sum % 11 < 2 ? 0 : 11 - sum % 11
+    if (result !== parseInt(digits.charAt(0))) return false
+    
+    length = length + 1
+    numbers = cleanCnpj.substring(0, length)
+    sum = 0
+    pos = length - 7
+    
+    for (let i = length; i >= 1; i--) {
+      sum += parseInt(numbers.charAt(length - i)) * pos--
+      if (pos < 2) pos = 9
+    }
+    
+    result = sum % 11 < 2 ? 0 : 11 - sum % 11
+    return result === parseInt(digits.charAt(1))
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+    let formattedValue = value
+
+    // Formatação para campos específicos
+    if (name === 'cnpj') {
+      // Formatar CNPJ: 00.000.000/0000-00
+      formattedValue = value
+        .replace(/\D/g, '')
+        .replace(/(\d{2})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1/$2')
+        .replace(/(\d{4})(\d{1,2})/, '$1-$2')
+        .replace(/(-\d{2})\d+?$/, '$1')
+    } else if (name === 'telefone') {
+      // Formatar telefone: (00) 00000-0000
+      formattedValue = value
+        .replace(/\D/g, '')
+        .replace(/(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{5})(\d)/, '$1-$2')
+        .replace(/(-\d{4})\d+?$/, '$1')
+    } else if (name === 'cep') {
+      // Formatar CEP: 00000-000
+      formattedValue = value
+        .replace(/\D/g, '')
+        .replace(/(\d{5})(\d)/, '$1-$2')
+        .replace(/(-\d{3})\d+?$/, '$1')
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: formattedValue
     }))
   }
 
@@ -48,20 +115,80 @@ export default function SignupScreen() {
       return
     }
 
+    // Validação de campos obrigatórios
+    if (!formData.nomeEmpresa.trim()) {
+      setError("Nome da empresa é obrigatório")
+      return
+    }
+
+    if (!formData.cnpj.trim()) {
+      setError("CNPJ é obrigatório")
+      return
+    }
+
+    if (!validateCNPJ(formData.cnpj)) {
+      setError("CNPJ inválido")
+      return
+    }
+
+    if (!formData.nomeResponsavel.trim()) {
+      setError("Nome do responsável é obrigatório")
+      return
+    }
+
+    if (!formData.email.trim()) {
+      setError("E-mail é obrigatório")
+      return
+    }
+
+    if (!formData.telefone.trim()) {
+      setError("Telefone é obrigatório")
+      return
+    }
+
+    if (!formData.username.trim()) {
+      setError("Nome de usuário é obrigatório")
+      return
+    }
+
     setIsLoading(true)
     
     try {
-      // Aqui você implementaria a chamada para a API de cadastro
-      console.log("Dados do cadastro:", formData)
+      // Preparar dados para envio conforme a API
+      const empresaData: EmpresaInput = {
+        nome: formData.nomeEmpresa,
+        cnpj: formData.cnpj.replace(/\D/g, ''), // Remove formatação do CNPJ
+        endereco: formData.endereco || '',
+        cidade: formData.cidade || '',
+        telefone: formData.telefone,
+        cep: formData.cep || '',
+        nomeAdmin: formData.nomeResponsavel,
+        usernameAdmin: formData.username,
+        emailAdmin: formData.email,
+        senhaAdmin: formData.password
+      }
+
+      console.log("Criando empresa:", empresaData)
       
-      // Simular processo de cadastro
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Chamar o serviço de criação de empresa
+      await criarEmpresa(empresaData)
       
-      // Redirecionar para login após sucesso
-      window.location.href = "/login"
+      // Sucesso - mostrar toast e redirecionar
+      toast.success("Conta criada com sucesso! Redirecionando para o login...")
       
-    } catch {
-      setError("Erro ao criar conta. Tente novamente.")
+      // Redirecionar para login após 2 segundos
+      setTimeout(() => {
+        window.location.href = "/login"
+      }, 2000)
+      
+    } catch (error: unknown) {
+      console.error("Erro ao criar conta:", error)
+      
+      // Mostrar erro específico da API ou erro genérico
+      const errorMessage = error instanceof Error ? error.message : "Erro ao criar conta. Tente novamente."
+      setError(errorMessage)
+      toast.error(errorMessage)
+      
     } finally {
       setIsLoading(false)
     }
