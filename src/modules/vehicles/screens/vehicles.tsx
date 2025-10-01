@@ -3,6 +3,8 @@
 
 import * as React from "react"
 import { Eye, Edit, Trash2, Plus, Search, ChevronLeft, ChevronRight, Car, User } from "lucide-react"
+import { Veiculo, VeiculoInput, getVeiculosList, createVeiculo, updateVeiculo, deleteVeiculo } from "@/servicos/vehicles-service"
+import { getClientes } from "@/servicos/clients-service"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -32,191 +34,17 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 
-// Lista de clientes para vinculação
-const availableClients = [
-  { id: 1, nome: "João Silva" },
-  { id: 2, nome: "Maria Oliveira" },
-  { id: 3, nome: "Carlos Souza" },
-  { id: 4, nome: "Ana Paula Lima" },
-  { id: 5, nome: "Fernando Ribeiro" },
-  { id: 6, nome: "Lucas Martins" },
-  { id: 7, nome: "Bruno Costa" },
-  { id: 8, nome: "Patrícia Gomes" },
-  { id: 9, nome: "Roberto Santos" },
-  { id: 10, nome: "Juliana Costa" },
-]
-
-// Dados de exemplo dos veículos
-const vehicles = [
-  {
-    id: 1,
-    placa: "ABC-1234",
-    marca: "Fiat",
-    modelo: "Uno",
-    ano: 2012,
-    cor: "Branco",
-    combustivel: "Flex",
-    quilometragem: 85000,
-    chassi: "9BD15906040123456",
-    renavam: "12345678901",
-    clienteId: 1,
-    clienteNome: "João Silva",
-    status: "Ativo",
-    ultimaManutencao: "2024-01-20",
-    proximaRevisao: "2024-04-20",
-    totalServicos: 5,
-    observacoes: "Veículo bem conservado",
-    dataCadastro: new Date("2023-06-15"),
-  },
-  {
-    id: 2,
-    placa: "DEF-5678",
-    marca: "Volkswagen",
-    modelo: "Gol",
-    ano: 2018,
-    cor: "Prata",
-    combustivel: "Flex",
-    quilometragem: 45000,
-    chassi: "9BWZZZ377VT123456",
-    renavam: "98765432109",
-    clienteId: 2,
-    clienteNome: "Maria Oliveira",
-    status: "Ativo",
-    ultimaManutencao: "2024-01-18",
-    proximaRevisao: "2024-07-18",
-    totalServicos: 3,
-    observacoes: "",
-    dataCadastro: new Date("2023-08-10"),
-  },
-  {
-    id: 3,
-    placa: "GHI-9012",
-    marca: "Chevrolet",
-    modelo: "Onix",
-    ano: 2019,
-    cor: "Vermelho",
-    combustivel: "Flex",
-    quilometragem: 32000,
-    chassi: "9BGKS08X0JG123456",
-    renavam: "11223344556",
-    clienteId: 3,
-    clienteNome: "Carlos Souza",
-    status: "Ativo",
-    ultimaManutencao: "2024-01-22",
-    proximaRevisao: "2024-04-22",
-    totalServicos: 8,
-    observacoes: "Veículo de frota empresarial",
-    dataCadastro: new Date("2023-04-20"),
-  },
-  {
-    id: 4,
-    placa: "JKL-3456",
-    marca: "Honda",
-    modelo: "Civic",
-    ano: 2020,
-    cor: "Preto",
-    combustivel: "Flex",
-    quilometragem: 28000,
-    chassi: "19XFC2F59KE123456",
-    renavam: "66778899001",
-    clienteId: 4,
-    clienteNome: "Ana Paula Lima",
-    status: "Ativo",
-    ultimaManutencao: "2024-01-15",
-    proximaRevisao: "2024-06-15",
-    totalServicos: 2,
-    observacoes: "",
-    dataCadastro: new Date("2023-11-05"),
-  },
-  {
-    id: 5,
-    placa: "MNO-7890",
-    marca: "Toyota",
-    modelo: "Corolla",
-    ano: 2018,
-    cor: "Branco",
-    combustivel: "Flex",
-    quilometragem: 67000,
-    chassi: "9BR53ZEC4J8123456",
-    renavam: "22334455667",
-    clienteId: 5,
-    clienteNome: "Fernando Ribeiro",
-    status: "Inativo",
-    ultimaManutencao: "2023-11-30",
-    proximaRevisao: "2024-02-28",
-    totalServicos: 12,
-    observacoes: "Cliente mudou-se de cidade",
-    dataCadastro: new Date("2022-01-15"),
-  },
-  {
-    id: 6,
-    placa: "PQR-1234",
-    marca: "Ford",
-    modelo: "Ka",
-    ano: 2016,
-    cor: "Azul",
-    combustivel: "Flex",
-    quilometragem: 95000,
-    chassi: "9BFZK5BA8G8123456",
-    renavam: "33445566778",
-    clienteId: 6,
-    clienteNome: "Lucas Martins",
-    status: "Ativo",
-    ultimaManutencao: "2024-01-19",
-    proximaRevisao: "2024-05-19",
-    totalServicos: 6,
-    observacoes: "",
-    dataCadastro: new Date("2023-07-12"),
-  },
-  {
-    id: 7,
-    placa: "STU-5678",
-    marca: "Renault",
-    modelo: "Sandero",
-    ano: 2017,
-    cor: "Cinza",
-    combustivel: "Flex",
-    quilometragem: 78000,
-    chassi: "93Y4SRDA4HJ123456",
-    renavam: "44556677889",
-    clienteId: 7,
-    clienteNome: "Bruno Costa",
-    status: "Ativo",
-    ultimaManutencao: "2024-01-10",
-    proximaRevisao: "2024-04-10",
-    totalServicos: 1,
-    observacoes: "Primeiro veículo do cliente",
-    dataCadastro: new Date("2024-01-05"),
-  },
-  {
-    id: 8,
-    placa: "VWX-9012",
-    marca: "Hyundai",
-    modelo: "HB20",
-    ano: 2021,
-    cor: "Branco",
-    combustivel: "Flex",
-    quilometragem: 15000,
-    chassi: "KMHB341BAMU123456",
-    renavam: "55667788990",
-    clienteId: 8,
-    clienteNome: "Patrícia Gomes",
-    status: "Ativo",
-    ultimaManutencao: "2024-01-21",
-    proximaRevisao: "2024-07-21",
-    totalServicos: 4,
-    observacoes: "",
-    dataCadastro: new Date("2023-09-18"),
-  },
-]
-
 const ITEMS_PER_PAGE = 6
 
 export default function VehiclesScreen() {
-  const [selectedVehicle, setSelectedVehicle] = React.useState<any>(null)
+  const [selectedVehicle, setSelectedVehicle] = React.useState<Veiculo | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
+  const [vehiclesList, setVehiclesList] = React.useState<Veiculo[]>([])
+  const [clientsList, setClientsList] = React.useState<Array<{ cpfCnpj: string; nome: string }>>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
   const [sortBy, setSortBy] = React.useState("latest")
   const [filterStatus, setFilterStatus] = React.useState("todos")
   const [filterBrand, setFilterBrand] = React.useState("todas")
@@ -228,22 +56,65 @@ export default function VehiclesScreen() {
     modelo: "",
     ano: "",
     cor: "",
-    combustivel: "Flex",
+    combustivel: "Gasolina",
     quilometragem: "",
     chassi: "",
     renavam: "",
-    clienteId: "",
-    status: "Ativo",
+    cpfCnpjCliente: "",
+    status: "ATIVO",
+    observacoes: "",
+  })
+  const [createForm, setCreateForm] = React.useState({
+    placa: "",
+    marca: "",
+    modelo: "",
+    ano: "",
+    cor: "",
+    combustivel: "Gasolina",
+    quilometragem: "",
+    chassi: "",
+    renavam: "",
+    cpfCnpjCliente: "",
+    status: "ATIVO",
     observacoes: "",
   })
 
+  // Carregar dados da API
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        // Carregar veículos e clientes em paralelo
+        const [vehiclesData, clientsData] = await Promise.all([
+          getVeiculosList(),
+          getClientes()
+        ])
+        
+        setVehiclesList(vehiclesData)
+        setClientsList(clientsData.map(client => ({
+          cpfCnpj: client.cpfCnpj,
+          nome: client.nome
+        })))
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err)
+        setError(err instanceof Error ? err.message : "Erro ao carregar dados")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadData()
+  }, [])
+
   // Função de ordenação e filtros
   const filteredAndSortedVehicles = React.useMemo(() => {
-    let filtered = vehicles
+    let filtered = vehiclesList
 
     // Filtro por status
     if (filterStatus !== "todos") {
-      filtered = filtered.filter((vehicle) => vehicle.status.toLowerCase() === filterStatus.toLowerCase())
+      filtered = filtered.filter((vehicle) => vehicle.status === filterStatus)
     }
 
     // Filtro por marca
@@ -258,7 +129,7 @@ export default function VehiclesScreen() {
           vehicle.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
           vehicle.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
           vehicle.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vehicle.clienteNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          vehicle.cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
           vehicle.chassi.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
@@ -267,9 +138,9 @@ export default function VehiclesScreen() {
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "latest":
-          return b.dataCadastro.getTime() - a.dataCadastro.getTime()
+          return new Date(b.cliente.dataCadastro).getTime() - new Date(a.cliente.dataCadastro).getTime()
         case "oldest":
-          return a.dataCadastro.getTime() - b.dataCadastro.getTime()
+          return new Date(a.cliente.dataCadastro).getTime() - new Date(b.cliente.dataCadastro).getTime()
         case "plate":
           return a.placa.localeCompare(b.placa)
         case "brand":
@@ -277,16 +148,16 @@ export default function VehiclesScreen() {
         case "year":
           return b.ano - a.ano
         case "client":
-          return a.clienteNome.localeCompare(b.clienteNome)
+          return a.cliente.nome.localeCompare(b.cliente.nome)
         case "services":
-          return b.totalServicos - a.totalServicos
+          return 0 // Sem dados de serviços na API atual
         default:
           return 0
       }
     })
 
     return sorted
-  }, [sortBy, filterStatus, filterBrand, searchTerm])
+  }, [vehiclesList, sortBy, filterStatus, filterBrand, searchTerm])
 
   // Paginação
   const totalPages = Math.ceil(filteredAndSortedVehicles.length / ITEMS_PER_PAGE)
@@ -299,7 +170,7 @@ export default function VehiclesScreen() {
     setIsViewDialogOpen(true)
   }
 
-  const handleEdit = (vehicle: any) => {
+  const handleEdit = (vehicle: Veiculo) => {
     setSelectedVehicle(vehicle)
     setEditForm({
       placa: vehicle.placa,
@@ -308,32 +179,110 @@ export default function VehiclesScreen() {
       ano: vehicle.ano.toString(),
       cor: vehicle.cor,
       combustivel: vehicle.combustivel,
-      quilometragem: vehicle.quilometragem.toString(),
+      quilometragem: vehicle.quilometragem,
       chassi: vehicle.chassi,
       renavam: vehicle.renavam,
-      clienteId: vehicle.clienteId.toString(),
+      cpfCnpjCliente: vehicle.cliente.cpfCnpj,
       status: vehicle.status,
-      observacoes: vehicle.observacoes,
+      observacoes: vehicle.observacoes || "",
     })
     setIsEditDialogOpen(true)
   }
 
-  const handleDelete = (vehicleId: number) => {
-    console.log("Excluindo veículo:", vehicleId)
+  const handleDelete = async (vehiclePlaca: string) => {
+    try {
+      await deleteVeiculo(vehiclePlaca)
+      // Recarregar lista após deletar
+      const vehiclesData = await getVeiculosList()
+      setVehiclesList(vehiclesData)
+    } catch (err) {
+      console.error("Erro ao excluir veículo:", err)
+      setError(err instanceof Error ? err.message : "Erro ao excluir veículo")
+    }
   }
 
-  const handleSaveEdit = () => {
-    console.log("Salvando edição:", editForm)
-    setIsEditDialogOpen(false)
+  const handleSaveEdit = async () => {
+    try {
+      if (!selectedVehicle) return
+      
+      const vehicleInput: VeiculoInput = {
+        placa: editForm.placa,
+        marca: editForm.marca,
+        modelo: editForm.modelo,
+        ano: parseInt(editForm.ano),
+        cor: editForm.cor,
+        combustivel: editForm.combustivel,
+        quilometragem: editForm.quilometragem,
+        chassi: editForm.chassi,
+        renavam: editForm.renavam,
+        status: editForm.status,
+        observacoes: editForm.observacoes,
+        cliente: {
+          cpfCnpj: editForm.cpfCnpjCliente,
+        },
+      }
+      
+      await updateVeiculo(selectedVehicle.placa, vehicleInput)
+      
+      // Recarregar lista após editar
+      const vehiclesData = await getVeiculosList()
+      setVehiclesList(vehiclesData)
+      setIsEditDialogOpen(false)
+    } catch (err) {
+      console.error("Erro ao editar veículo:", err)
+      setError(err instanceof Error ? err.message : "Erro ao editar veículo")
+    }
   }
 
-  const handleCreateVehicle = () => {
-    console.log("Criando novo veículo")
-    setIsCreateDialogOpen(false)
+  const handleCreateVehicle = async () => {
+    try {
+      const vehicleInput: VeiculoInput = {
+        placa: createForm.placa,
+        marca: createForm.marca,
+        modelo: createForm.modelo,
+        ano: parseInt(createForm.ano),
+        cor: createForm.cor,
+        combustivel: createForm.combustivel,
+        quilometragem: createForm.quilometragem,
+        chassi: createForm.chassi,
+        renavam: createForm.renavam,
+        status: createForm.status,
+        observacoes: createForm.observacoes,
+        cliente: {
+          cpfCnpj: createForm.cpfCnpjCliente,
+        },
+      }
+      
+      await createVeiculo(vehicleInput)
+      
+      // Recarregar lista após criar
+      const vehiclesData = await getVeiculosList()
+      setVehiclesList(vehiclesData)
+      setIsCreateDialogOpen(false)
+      
+      // Limpar formulário
+      setCreateForm({
+        placa: "",
+        marca: "",
+        modelo: "",
+        ano: "",
+        cor: "",
+        combustivel: "Gasolina",
+        quilometragem: "",
+        chassi: "",
+        renavam: "",
+        cpfCnpjCliente: "",
+        status: "ATIVO",
+        observacoes: "",
+      })
+    } catch (err) {
+      console.error("Erro ao criar veículo:", err)
+      setError(err instanceof Error ? err.message : "Erro ao criar veículo")
+    }
   }
 
   const getStatusBadge = (status: string) => {
-    return status === "Ativo" ? (
+    return status === "ATIVO" ? (
       <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ativo</Badge>
     ) : (
       <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Inativo</Badge>
@@ -354,12 +303,11 @@ export default function VehiclesScreen() {
     return brandColors[marca as keyof typeof brandColors] || "bg-gray-100 text-gray-800"
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR")
-  }
 
-  const formatKm = (km: number) => {
-    return km.toLocaleString("pt-BR") + " km"
+
+  const formatKm = (km: string | number) => {
+    const kmNumber = typeof km === 'string' ? parseInt(km.replace(/\D/g, '')) : km
+    return kmNumber.toLocaleString("pt-BR") + " km"
   }
 
   const renderActionButtons = (vehicle: any) => (
@@ -396,7 +344,7 @@ export default function VehiclesScreen() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleDelete(vehicle.id)} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={() => handleDelete(vehicle.placa)} className="bg-red-600 hover:bg-red-700">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -404,6 +352,38 @@ export default function VehiclesScreen() {
       </AlertDialog>
     </div>
   )
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 p-4 sm:p-6 min-h-screen">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5A6ACF] mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando veículos...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 p-4 sm:p-6 min-h-screen">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()} className="bg-[#5A6ACF] hover:bg-[#5A6ACF]">
+                Tentar novamente
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 p-4 sm:p-6 min-h-screen">
@@ -429,13 +409,13 @@ export default function VehiclesScreen() {
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor="new-cliente">Cliente Proprietário</Label>
-                    <Select>
+                    <Select value={createForm.cpfCnpjCliente} onValueChange={(value) => setCreateForm({ ...createForm, cpfCnpjCliente: value })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o cliente" />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableClients.map((client) => (
-                          <SelectItem key={client.id} value={client.id.toString()}>
+                        {clientsList.map((client) => (
+                          <SelectItem key={client.cpfCnpj} value={client.cpfCnpj}>
                             {client.nome}
                           </SelectItem>
                         ))}
@@ -446,80 +426,123 @@ export default function VehiclesScreen() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="new-placa">Placa</Label>
-                      <Input id="new-placa" placeholder="ABC-1234" />
+                      <Input 
+                        id="new-placa" 
+                        placeholder="ABC-1234" 
+                        value={createForm.placa}
+                        onChange={(e) => setCreateForm({ ...createForm, placa: e.target.value })}
+                      />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="new-renavam">RENAVAM</Label>
-                      <Input id="new-renavam" placeholder="12345678901" />
+                      <Input 
+                        id="new-renavam" 
+                        placeholder="12345678901" 
+                        value={createForm.renavam}
+                        onChange={(e) => setCreateForm({ ...createForm, renavam: e.target.value })}
+                      />
                     </div>
                   </div>
 
                   <div className="grid gap-2">
                     <Label htmlFor="new-chassi">Chassi</Label>
-                    <Input id="new-chassi" placeholder="9BD15906040123456" />
+                    <Input 
+                      id="new-chassi" 
+                      placeholder="9BD15906040123456" 
+                      value={createForm.chassi}
+                      onChange={(e) => setCreateForm({ ...createForm, chassi: e.target.value })}
+                    />
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="new-marca">Marca</Label>
-                      <Select>
+                      <Select value={createForm.marca} onValueChange={(value) => setCreateForm({ ...createForm, marca: value })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="fiat">Fiat</SelectItem>
-                          <SelectItem value="volkswagen">Volkswagen</SelectItem>
-                          <SelectItem value="chevrolet">Chevrolet</SelectItem>
-                          <SelectItem value="honda">Honda</SelectItem>
-                          <SelectItem value="toyota">Toyota</SelectItem>
-                          <SelectItem value="ford">Ford</SelectItem>
-                          <SelectItem value="renault">Renault</SelectItem>
-                          <SelectItem value="hyundai">Hyundai</SelectItem>
-                          <SelectItem value="nissan">Nissan</SelectItem>
-                          <SelectItem value="peugeot">Peugeot</SelectItem>
+                          <SelectItem value="Fiat">Fiat</SelectItem>
+                          <SelectItem value="Volkswagen">Volkswagen</SelectItem>
+                          <SelectItem value="Chevrolet">Chevrolet</SelectItem>
+                          <SelectItem value="Honda">Honda</SelectItem>
+                          <SelectItem value="Toyota">Toyota</SelectItem>
+                          <SelectItem value="Ford">Ford</SelectItem>
+                          <SelectItem value="Renault">Renault</SelectItem>
+                          <SelectItem value="Hyundai">Hyundai</SelectItem>
+                          <SelectItem value="Nissan">Nissan</SelectItem>
+                          <SelectItem value="Peugeot">Peugeot</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="new-modelo">Modelo</Label>
-                      <Input id="new-modelo" placeholder="Ex: Civic" />
+                      <Input 
+                        id="new-modelo" 
+                        placeholder="Ex: Civic" 
+                        value={createForm.modelo}
+                        onChange={(e) => setCreateForm({ ...createForm, modelo: e.target.value })}
+                      />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="new-ano">Ano</Label>
-                      <Input id="new-ano" type="number" placeholder="2020" min="1900" max="2030" />
+                      <Input 
+                        id="new-ano" 
+                        type="number" 
+                        placeholder="2020" 
+                        min="1900" 
+                        max="2030" 
+                        value={createForm.ano}
+                        onChange={(e) => setCreateForm({ ...createForm, ano: e.target.value })}
+                      />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="new-cor">Cor</Label>
-                      <Input id="new-cor" placeholder="Ex: Branco" />
+                      <Input 
+                        id="new-cor" 
+                        placeholder="Ex: Branco" 
+                        value={createForm.cor}
+                        onChange={(e) => setCreateForm({ ...createForm, cor: e.target.value })}
+                      />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="new-combustivel">Combustível</Label>
-                      <Select>
+                      <Select value={createForm.combustivel} onValueChange={(value) => setCreateForm({ ...createForm, combustivel: value })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="flex">Flex</SelectItem>
-                          <SelectItem value="gasolina">Gasolina</SelectItem>
-                          <SelectItem value="etanol">Etanol</SelectItem>
-                          <SelectItem value="diesel">Diesel</SelectItem>
-                          <SelectItem value="eletrico">Elétrico</SelectItem>
-                          <SelectItem value="hibrido">Híbrido</SelectItem>
+                          <SelectItem value="Flex">Flex</SelectItem>
+                          <SelectItem value="Gasolina">Gasolina</SelectItem>
+                          <SelectItem value="Etanol">Etanol</SelectItem>
+                          <SelectItem value="Diesel">Diesel</SelectItem>
+                          <SelectItem value="Elétrico">Elétrico</SelectItem>
+                          <SelectItem value="Híbrido">Híbrido</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="new-quilometragem">Quilometragem</Label>
-                      <Input id="new-quilometragem" type="number" placeholder="50000" />
+                      <Input 
+                        id="new-quilometragem" 
+                        placeholder="50000" 
+                        value={createForm.quilometragem}
+                        onChange={(e) => setCreateForm({ ...createForm, quilometragem: e.target.value })}
+                      />
                     </div>
                   </div>
 
                   <div className="grid gap-2">
                     <Label htmlFor="new-observacoes">Observações</Label>
-                    <Textarea id="new-observacoes" placeholder="Observações sobre o veículo (opcional)" />
+                    <Textarea 
+                      id="new-observacoes" 
+                      placeholder="Observações sobre o veículo (opcional)" 
+                      value={createForm.observacoes}
+                      onChange={(e) => setCreateForm({ ...createForm, observacoes: e.target.value })}
+                    />
                   </div>
                 </div>
                 <DialogFooter>
@@ -543,8 +566,8 @@ export default function VehiclesScreen() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="ativo">Ativo</SelectItem>
-                    <SelectItem value="inativo">Inativo</SelectItem>
+                    <SelectItem value="ATIVO">Ativo</SelectItem>
+                    <SelectItem value="INATIVO">Inativo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -616,10 +639,10 @@ export default function VehiclesScreen() {
             </TableHeader>
             <TableBody>
               {currentVehicles.map((vehicle) => (
-                <TableRow key={vehicle.id} className="hover:bg-gray-50">
+                <TableRow key={vehicle.placa} className="hover:bg-gray-50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                                              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                         <Car className="w-4 h-4 text-[#707FDD]" />
                       </div>
                       <div>
@@ -640,7 +663,7 @@ export default function VehiclesScreen() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">{vehicle.clienteNome}</span>
+                      <span className="text-sm">{vehicle.cliente.nome}</span>
                     </div>
                   </TableCell>
                   <TableCell className="font-mono font-medium">{vehicle.placa}</TableCell>
@@ -652,8 +675,8 @@ export default function VehiclesScreen() {
                   </TableCell>
                   <TableCell>
                     <div className="text-center">
-                      <p className="font-medium text-[#707FDD]">{vehicle.totalServicos}</p>
-                      <p className="text-xs text-gray-500">Último: {formatDate(vehicle.ultimaManutencao)}</p>
+                      <p className="font-medium text-[#707FDD]">-</p>
+                      <p className="text-xs text-gray-500">Sem dados</p>
                     </div>
                   </TableCell>
                   <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
@@ -667,10 +690,10 @@ export default function VehiclesScreen() {
         {/* Mobile Cards */}
         <div className="grid grid-cols-1 gap-4 md:hidden">
           {currentVehicles.map((vehicle) => (
-            <div key={vehicle.id} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3">
+            <div key={vehicle.placa} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3">
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3 flex-grow">
-                                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                     <Car className="w-5 h-5 text-[#707FDD]" />
                   </div>
                   <div>
@@ -685,7 +708,7 @@ export default function VehiclesScreen() {
 
               <div className="flex items-center gap-2 text-sm">
                 <User className="w-4 h-4 text-gray-400" />
-                <span>{vehicle.clienteNome}</span>
+                <span>{vehicle.cliente.nome}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -703,16 +726,16 @@ export default function VehiclesScreen() {
 
               <div className="flex justify-between items-center pt-2 border-t">
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">Serviços</p>
-                  <p className="font-medium text-[#707FDD]">{vehicle.totalServicos}</p>
+                  <p className="text-sm text-gray-500">Combustível</p>
+                  <p className="font-medium">{vehicle.combustivel}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-500">Status</p>
                   {getStatusBadge(vehicle.status)}
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">Última manutenção</p>
-                  <p className="text-xs">{formatDate(vehicle.ultimaManutencao)}</p>
+                  <p className="text-sm text-gray-500">RENAVAM</p>
+                  <p className="text-xs font-mono">{vehicle.renavam}</p>
                 </div>
               </div>
             </div>
@@ -781,7 +804,7 @@ export default function VehiclesScreen() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Proprietário</Label>
-                    <p className="text-sm">{selectedVehicle.clienteNome}</p>
+                    <p className="text-sm">{selectedVehicle.cliente.nome}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Status</Label>
@@ -810,8 +833,8 @@ export default function VehiclesScreen() {
                     <p className="text-sm font-medium">{formatKm(selectedVehicle.quilometragem)}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Total de Serviços</Label>
-                    <p className="text-sm font-medium text-[#707FDD]">{selectedVehicle.totalServicos}</p>
+                    <Label className="text-sm font-medium text-gray-500">Combustível</Label>
+                    <p className="text-sm font-medium">{selectedVehicle.combustivel}</p>
                   </div>
                 </div>
 
@@ -828,12 +851,12 @@ export default function VehiclesScreen() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Última Manutenção</Label>
-                    <p className="text-sm">{formatDate(selectedVehicle.ultimaManutencao)}</p>
+                    <Label className="text-sm font-medium text-gray-500">Status</Label>
+                    <p className="text-sm">{getStatusBadge(selectedVehicle.status)}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Próxima Revisão</Label>
-                    <p className="text-sm">{formatDate(selectedVehicle.proximaRevisao)}</p>
+                    <Label className="text-sm font-medium text-gray-500">CPF/CNPJ Cliente</Label>
+                    <p className="text-sm font-mono">{selectedVehicle.cliente.cpfCnpj}</p>
                   </div>
                 </div>
 
@@ -862,15 +885,15 @@ export default function VehiclesScreen() {
               <div className="grid gap-2">
                 <Label htmlFor="edit-cliente">Cliente Proprietário</Label>
                 <Select
-                  value={editForm.clienteId}
-                  onValueChange={(value) => setEditForm({ ...editForm, clienteId: value })}
+                  value={editForm.cpfCnpjCliente}
+                  onValueChange={(value) => setEditForm({ ...editForm, cpfCnpjCliente: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableClients.map((client) => (
-                      <SelectItem key={client.id} value={client.id.toString()}>
+                    {clientsList.map((client) => (
+                      <SelectItem key={client.cpfCnpj} value={client.cpfCnpj}>
                         {client.nome}
                       </SelectItem>
                     ))}

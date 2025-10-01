@@ -30,7 +30,7 @@ export default function LandingPage() {
                 className="bg-[#5A6ACF] hover:bg-[#4A5ABF] text-white"
                 onClick={handleSignupClick}
               >
-                Começar Grátis
+                Cadastre-se
               </Button>
             </div>
           </div>
@@ -57,7 +57,7 @@ export default function LandingPage() {
                 className="bg-[#5A6ACF] hover:bg-[#4A5ABF] text-white text-lg px-8 py-3"
                 onClick={handleSignupClick}
               >
-                Começar Gratuitamente
+                Cadastre-se
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button 
@@ -66,7 +66,7 @@ export default function LandingPage() {
                 className="text-lg px-8 py-3"
                 onClick={handleLoginClick}
               >
-                Ver Demonstração
+                Realizar Login
               </Button>
             </div>
           </div>
@@ -274,7 +274,7 @@ export default function LandingPage() {
                 </li>
               </ul>
               <Button className="w-full" variant="outline" onClick={handleSignupClick}>
-                Começar Teste Grátis
+                Cadastre-se
               </Button>
             </div>
 
@@ -317,7 +317,7 @@ export default function LandingPage() {
                 className="w-full bg-[#5A6ACF] hover:bg-[#4A5ABF] text-white"
                 onClick={handleSignupClick}
               >
-                Começar Teste Grátis
+                Cadastre-se - Teste Grátis
               </Button>
             </div>
 
@@ -375,7 +375,7 @@ export default function LandingPage() {
               className="bg-white text-[#5A6ACF] hover:bg-gray-50 text-lg px-8 py-3"
               onClick={handleSignupClick}
             >
-              Começar Teste Grátis de 30 Dias
+              Cadastre-se
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button 
@@ -384,7 +384,7 @@ export default function LandingPage() {
               className="border-white text-white hover:bg-white hover:text-[#5A6ACF] text-lg px-8 py-3"
               onClick={handleLoginClick}
             >
-              Falar com Especialista
+              Realizar Login
             </Button>
           </div>
         </div>
