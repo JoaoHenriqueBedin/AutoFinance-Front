@@ -2,9 +2,10 @@
 "use client"
 
 import * as React from "react"
-import { Eye, Edit, Trash2, Plus, Search, ChevronLeft, ChevronRight, Car, User } from "lucide-react"
-import { Veiculo, VeiculoInput, getVeiculosList, createVeiculo, updateVeiculo, deleteVeiculo } from "@/servicos/vehicles-service"
+import { Eye, Edit, Trash2, Plus, Search, ChevronLeft, ChevronRight, Car, User, RotateCcw } from "lucide-react"
+import { Veiculo, VeiculoInput, getVeiculosList, createVeiculo, updateVeiculo } from "@/servicos/vehicles-service"
 import { getClientes } from "@/servicos/clients-service"
+import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -191,13 +192,43 @@ export default function VehiclesScreen() {
 
   const handleDelete = async (vehiclePlaca: string) => {
     try {
-      await deleteVeiculo(vehiclePlaca)
-      // Recarregar lista após deletar
+      // Encontrar o veículo na lista para obter seus dados
+      const vehicle = vehiclesList.find(v => v.placa === vehiclePlaca)
+      if (!vehicle) {
+        throw new Error("Veículo não encontrado")
+      }
+
+      // Criar objeto com dados atuais mas status INATIVO
+      const vehicleInput: VeiculoInput = {
+        placa: vehicle.placa,
+        marca: vehicle.marca,
+        modelo: vehicle.modelo,
+        ano: vehicle.ano,
+        cor: vehicle.cor,
+        combustivel: vehicle.combustivel,
+        quilometragem: vehicle.quilometragem,
+        chassi: vehicle.chassi,
+        renavam: vehicle.renavam,
+        status: "INATIVO", // Inativar ao invés de excluir
+        observacoes: vehicle.observacoes || "",
+        cliente: {
+          cpfCnpj: vehicle.cliente.cpfCnpj,
+        },
+      }
+
+      // Atualizar o veículo para inativo
+      await updateVeiculo(vehiclePlaca, vehicleInput)
+      
+      // Recarregar lista após inativar
       const vehiclesData = await getVeiculosList()
       setVehiclesList(vehiclesData)
+      
+      // Toast de sucesso
+      toast.success(`Veículo ${vehicle.marca} ${vehicle.modelo} (${vehiclePlaca}) foi inativado com sucesso!`)
     } catch (err) {
-      console.error("Erro ao excluir veículo:", err)
-      setError(err instanceof Error ? err.message : "Erro ao excluir veículo")
+      console.error("Erro ao inativar veículo:", err)
+      setError(err instanceof Error ? err.message : "Erro ao inativar veículo")
+      toast.error(err instanceof Error ? err.message : "Erro ao inativar veículo")
     }
   }
 
@@ -209,18 +240,21 @@ export default function VehiclesScreen() {
         placa: editForm.placa,
         marca: editForm.marca,
         modelo: editForm.modelo,
-        ano: parseInt(editForm.ano),
+        ano: parseInt(editForm.ano) || 0,
         cor: editForm.cor,
         combustivel: editForm.combustivel,
         quilometragem: editForm.quilometragem,
         chassi: editForm.chassi,
         renavam: editForm.renavam,
         status: editForm.status,
-        observacoes: editForm.observacoes,
+        observacoes: editForm.observacoes || "",
         cliente: {
           cpfCnpj: editForm.cpfCnpjCliente,
         },
       }
+      
+      console.log("Dados do formulário de edição:", editForm)
+      console.log("Payload que será enviado:", vehicleInput)
       
       await updateVeiculo(selectedVehicle.placa, vehicleInput)
       
@@ -228,9 +262,13 @@ export default function VehiclesScreen() {
       const vehiclesData = await getVeiculosList()
       setVehiclesList(vehiclesData)
       setIsEditDialogOpen(false)
+      
+      // Toast de sucesso
+      toast.success(`Veículo ${vehicleInput.marca} ${vehicleInput.modelo} foi atualizado com sucesso!`)
     } catch (err) {
       console.error("Erro ao editar veículo:", err)
       setError(err instanceof Error ? err.message : "Erro ao editar veículo")
+      toast.error(err instanceof Error ? err.message : "Erro ao editar veículo")
     }
   }
 
@@ -240,14 +278,14 @@ export default function VehiclesScreen() {
         placa: createForm.placa,
         marca: createForm.marca,
         modelo: createForm.modelo,
-        ano: parseInt(createForm.ano),
+        ano: parseInt(createForm.ano) || 0,
         cor: createForm.cor,
         combustivel: createForm.combustivel,
         quilometragem: createForm.quilometragem,
         chassi: createForm.chassi,
         renavam: createForm.renavam,
         status: createForm.status,
-        observacoes: createForm.observacoes,
+        observacoes: createForm.observacoes || "",
         cliente: {
           cpfCnpj: createForm.cpfCnpjCliente,
         },
@@ -259,6 +297,9 @@ export default function VehiclesScreen() {
       const vehiclesData = await getVeiculosList()
       setVehiclesList(vehiclesData)
       setIsCreateDialogOpen(false)
+      
+      // Toast de sucesso
+      toast.success(`Veículo ${vehicleInput.marca} ${vehicleInput.modelo} foi cadastrado com sucesso!`)
       
       // Limpar formulário
       setCreateForm({
@@ -278,6 +319,7 @@ export default function VehiclesScreen() {
     } catch (err) {
       console.error("Erro ao criar veículo:", err)
       setError(err instanceof Error ? err.message : "Erro ao criar veículo")
+      toast.error(err instanceof Error ? err.message : "Erro ao criar veículo")
     }
   }
 
@@ -310,7 +352,49 @@ export default function VehiclesScreen() {
     return kmNumber.toLocaleString("pt-BR") + " km"
   }
 
-  const renderActionButtons = (vehicle: any) => (
+  const handleReactivate = async (vehiclePlaca: string) => {
+    try {
+      // Encontrar o veículo na lista para obter seus dados
+      const vehicle = vehiclesList.find(v => v.placa === vehiclePlaca)
+      if (!vehicle) {
+        throw new Error("Veículo não encontrado")
+      }
+
+      // Criar objeto com dados atuais mas status ATIVO
+      const vehicleInput: VeiculoInput = {
+        placa: vehicle.placa,
+        marca: vehicle.marca,
+        modelo: vehicle.modelo,
+        ano: vehicle.ano,
+        cor: vehicle.cor,
+        combustivel: vehicle.combustivel,
+        quilometragem: vehicle.quilometragem,
+        chassi: vehicle.chassi,
+        renavam: vehicle.renavam,
+        status: "ATIVO", // Reativar o veículo
+        observacoes: vehicle.observacoes || "",
+        cliente: {
+          cpfCnpj: vehicle.cliente.cpfCnpj,
+        },
+      }
+
+      // Atualizar o veículo para ativo
+      await updateVeiculo(vehiclePlaca, vehicleInput)
+      
+      // Recarregar lista após reativar
+      const vehiclesData = await getVeiculosList()
+      setVehiclesList(vehiclesData)
+      
+      // Toast de sucesso
+      toast.success(`Veículo ${vehicle.marca} ${vehicle.modelo} (${vehiclePlaca}) foi reativado com sucesso!`)
+    } catch (err) {
+      console.error("Erro ao reativar veículo:", err)
+      setError(err instanceof Error ? err.message : "Erro ao reativar veículo")
+      toast.error(err instanceof Error ? err.message : "Erro ao reativar veículo")
+    }
+  }
+
+  const renderActionButtons = (vehicle: Veiculo) => (
     <div className="flex gap-1">
       <Button
         variant="ghost"
@@ -328,28 +412,56 @@ export default function VehiclesScreen() {
       >
         <Edit className="h-4 w-4" />
       </Button>
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:bg-red-50">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir o veículo "{vehicle.marca} {vehicle.modelo}" (Placa: {vehicle.placa})? Esta
-              ação não pode ser desfeita e removerá todo o histórico do veículo.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleDelete(vehicle.placa)} className="bg-red-600 hover:bg-red-700">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      
+      {vehicle.status === "ATIVO" ? (
+        // Botão para inativar veículos ativos
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Inativação</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja inativar o veículo "{vehicle.marca} {vehicle.modelo}" (Placa: {vehicle.placa})? 
+                O veículo será marcado como inativo mas seus dados serão preservados.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={() => handleDelete(vehicle.placa)} className="bg-orange-600 hover:bg-orange-700">
+                Inativar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : (
+        // Botão para reativar veículos inativos
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-600 hover:bg-green-50">
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Reativação</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja reativar o veículo "{vehicle.marca} {vehicle.modelo}" (Placa: {vehicle.placa})? 
+                O veículo voltará a ficar ativo no sistema.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={() => handleReactivate(vehicle.placa)} className="bg-green-600 hover:bg-green-700">
+                Reativar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   )
 
@@ -781,89 +893,94 @@ export default function VehiclesScreen() {
 
         {/* View Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Visualizar Veículo</DialogTitle>
               <DialogDescription>Informações completas do veículo selecionado.</DialogDescription>
             </DialogHeader>
             {selectedVehicle && (
-              <div className="grid gap-4 py-4">
-                <div className="flex items-center gap-4 pb-4 border-b">
-                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Car className="w-8 h-8 text-[#707FDD]" />
+              <div className="space-y-4 py-2">
+                {/* Header Section */}
+                <div className="flex items-center gap-3 pb-3 border-b">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <Car className="w-6 h-6 text-[#707FDD]" />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">
+                  <div className="flex-1">
+                    <h3 className="font-semibold">
                       {selectedVehicle.marca} {selectedVehicle.modelo}
                     </h3>
                     <p className="text-sm text-gray-500 font-mono">{selectedVehicle.placa}</p>
-                    <Badge className={`${getBrandColor(selectedVehicle.marca)} mt-1`}>{selectedVehicle.marca}</Badge>
+                    <div className="flex gap-2 mt-1">
+                      <Badge className={getBrandColor(selectedVehicle.marca)}>{selectedVehicle.marca}</Badge>
+                      {getStatusBadge(selectedVehicle.status)}
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Proprietário</Label>
-                    <p className="text-sm">{selectedVehicle.cliente.nome}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Status</Label>
-                    <div className="mt-1">{getStatusBadge(selectedVehicle.status)}</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Ano</Label>
-                    <p className="text-sm font-medium">{selectedVehicle.ano}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Cor</Label>
-                    <p className="text-sm">{selectedVehicle.cor}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Combustível</Label>
-                    <p className="text-sm">{selectedVehicle.combustivel}</p>
+                {/* Proprietário Section */}
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Proprietário</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">Nome</Label>
+                      <p className="text-sm font-medium">{selectedVehicle.cliente.nome}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">CPF/CNPJ</Label>
+                      <p className="text-sm font-mono">{selectedVehicle.cliente.cpfCnpj}</p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Quilometragem</Label>
-                    <p className="text-sm font-medium">{formatKm(selectedVehicle.quilometragem)}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Combustível</Label>
-                    <p className="text-sm font-medium">{selectedVehicle.combustivel}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Chassi</Label>
-                    <p className="text-sm font-mono">{selectedVehicle.chassi}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">RENAVAM</Label>
-                    <p className="text-sm font-mono">{selectedVehicle.renavam}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Status</Label>
-                    <p className="text-sm">{getStatusBadge(selectedVehicle.status)}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">CPF/CNPJ Cliente</Label>
-                    <p className="text-sm font-mono">{selectedVehicle.cliente.cpfCnpj}</p>
+                {/* Detalhes do Veículo Section */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Detalhes do Veículo</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">Ano</Label>
+                      <p className="text-sm font-medium">{selectedVehicle.ano}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">Cor</Label>
+                      <p className="text-sm">{selectedVehicle.cor}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">Combustível</Label>
+                      <p className="text-sm">{selectedVehicle.combustivel}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">Quilometragem</Label>
+                      <p className="text-sm font-medium">{formatKm(selectedVehicle.quilometragem)}</p>
+                    </div>
                   </div>
                 </div>
 
+                {/* Documentação Section */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Documentação</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">Placa</Label>
+                      <p className="text-sm font-mono">{selectedVehicle.placa}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">RENAVAM</Label>
+                      <p className="text-sm font-mono">{selectedVehicle.renavam}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="text-xs font-medium text-gray-500">Chassi</Label>
+                      <p className="text-sm font-mono break-all">{selectedVehicle.chassi}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Observações Section */}
                 {selectedVehicle.observacoes && (
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Observações</Label>
-                    <p className="text-sm">{selectedVehicle.observacoes}</p>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Observações</h4>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <p className="text-sm text-gray-700">{selectedVehicle.observacoes}</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1015,8 +1132,8 @@ export default function VehiclesScreen() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Ativo">Ativo</SelectItem>
-                    <SelectItem value="Inativo">Inativo</SelectItem>
+                    <SelectItem value="ATIVO">Ativo</SelectItem>
+                    <SelectItem value="INATIVO">Inativo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
