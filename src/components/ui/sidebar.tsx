@@ -15,9 +15,10 @@ import {
   DoorOpen,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import logo from "../../assets/logo.svg";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../../servicos/login-service";
+import { logout, isUserAdmin, isUserAdminSync } from "../../servicos/login-service";
 
 type SidebarProps = {
   open: boolean;
@@ -27,6 +28,21 @@ type SidebarProps = {
 
 export default function Sidebar({ open, onClose, onLinkClick }: SidebarProps) {
   const navigate = useNavigate();
+  const [userIsAdmin, setUserIsAdmin] = useState(isUserAdminSync());
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const isAdmin = await isUserAdmin();
+        setUserIsAdmin(isAdmin);
+      } catch (error) {
+        console.error('Erro ao verificar status de admin:', error);
+        setUserIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, []);
 
   return (
     <div
@@ -75,10 +91,10 @@ export default function Sidebar({ open, onClose, onLinkClick }: SidebarProps) {
 
         <p className="text-xs text-gray-500 mt-6 mb-1">OUTROS</p>
         {[
-          { to: "/settings", icon: <Settings size={18} />, label: "Configurações" },
-          { to: "/users", icon: <UserIcon size={18} />, label: "Usuários" },
-          { to: "/help", icon: <HelpCircle size={18} />, label: "Ajuda" }
-        ].map(({ to, icon, label }) => (
+          { to: "/settings", icon: <Settings size={18} />, label: "Configurações", adminOnly: true },
+          { to: "/users", icon: <UserIcon size={18} />, label: "Usuários", adminOnly: true },
+          { to: "/help", icon: <HelpCircle size={18} />, label: "Ajuda", adminOnly: false }
+        ].filter(item => !item.adminOnly || userIsAdmin).map(({ to, icon, label }) => (
           <SidebarItem
             key={to}
             to={to}

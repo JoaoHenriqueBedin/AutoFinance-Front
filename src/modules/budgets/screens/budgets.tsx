@@ -2,7 +2,9 @@
 "use client";
 
 import * as React from "react";
-import { Eye, Edit, Trash2, Plus, Search } from "lucide-react";
+import { Eye, Edit, Trash2, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { toast } from "react-toastify";
+import { useAuth } from "@/hooks/useAuth";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -43,124 +45,292 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { 
+  getOrcamentos, 
+  createOrcamento, 
+  updateOrcamento, 
+  deleteOrcamento,
+  Orcamento,
+  OrcamentoInput 
+} from "@/servicos/budgets-service";
+import { getClientes, Cliente } from "@/servicos/clients-service";
+import { getVeiculosByCliente, Veiculo } from "@/servicos/vehicles-service";
+import { getServicosList, Servico } from "@/servicos/services-service";
 
-// Dados de exemplo dos orçamentos (sem alterações)
-const budgets = [
-  {
-    id: 1,
-    cliente: "João Silva",
-    carro: "Fiat Uno 2012",
-    servico: "Troca de óleo",
-    valor: "R$ 150,00",
-    mecanico: "Gustavo",
-  },
-  {
-    id: 2,
-    cliente: "Maria Oliveira",
-    carro: "Volkswagen Gol 2018",
-    servico: "Alinhamento e balanceamento",
-    valor: "R$ 120,00",
-    mecanico: "Isabely",
-  },
-  {
-    id: 3,
-    cliente: "Carlos Souza",
-    carro: "Chevrolet Onix 2019",
-    servico: "Revisão dos freios",
-    valor: "R$ 250,00",
-    mecanico: "João",
-  },
-  {
-    id: 4,
-    cliente: "Ana Paula Lima",
-    carro: "Honda Civic 2020",
-    servico: "Troca do filtro de ar",
-    valor: "R$ 80,00",
-    mecanico: "Gustavo",
-  },
-  {
-    id: 5,
-    cliente: "Fernando Ribeiro",
-    carro: "Toyota Corolla 2018",
-    servico: "Revisão dos amortecedores",
-    valor: "R$ 380,00",
-    mecanico: "Isabely",
-  },
-  {
-    id: 6,
-    cliente: "Lucas Martins",
-    carro: "Ford Ka 2016",
-    servico: "Substituição da correia dentada",
-    valor: "R$ 450,00",
-    mecanico: "João",
-  },
-  {
-    id: 7,
-    cliente: "Bruno Costa",
-    carro: "Renault Sandero 2017",
-    servico: "Troca da bateria",
-    valor: "R$ 300,00",
-    mecanico: "Gustavo",
-  },
-  {
-    id: 8,
-    cliente: "Patrícia Gomes",
-    carro: "Hyundai HB20 2021",
-    servico: "Higienização do ar-condicionado",
-    valor: "R$ 130,00",
-    mecanico: "Isabely",
-  },
-];
+const ITEMS_PER_PAGE = 6;
 
 export default function BudgetScreen() {
-  const [selectedBudget, setSelectedBudget] = React.useState<any>(null);
+  // Hook de autenticação para monitorar sessão
+  const { authenticated, timeRemaining } = useAuth();
+  
+  // Estados para controle dos orçamentos
+  const [budgets, setBudgets] = React.useState<Orcamento[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  
+  // Estados para controle dos diálogos
+  const [selectedBudget, setSelectedBudget] = React.useState<Orcamento | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
-  const [isRecoverDialogOpen, setIsRecoverDialogOpen] = React.useState(false);
+  
+  // Estados para filtros e paginação
+  const [sortBy, setSortBy] = React.useState("latest");
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [currentPage, setCurrentPage] = React.useState(1);
+  
+  // Estados para dados auxiliares
+  const [clients, setClients] = React.useState<Cliente[]>([]);
+  const [vehicles, setVehicles] = React.useState<Veiculo[]>([]);
+  const [services, setServices] = React.useState<Servico[]>([]);
+  const [loadingClients, setLoadingClients] = React.useState(false);
+  const [loadingVehicles, setLoadingVehicles] = React.useState(false);
+  const [loadingServices, setLoadingServices] = React.useState(false);
+
+  // Estados para formulários
+  const [createForm, setCreateForm] = React.useState({
+    clienteCpfCnpj: "",
+    veiculoPlaca: "",
+    servicoId: "",
+    valorAjustado: "",
+    status: "ATIVO",
+  });
+  
   const [editForm, setEditForm] = React.useState({
-    cliente: "",
-    carro: "",
-    servico: "",
-    valor: "",
-    mecanico: "",
+    cpfCnpj: "",
+    placa: "",
+    nomeServico: "",
+    valorAjustado: "",
+    status: "ATIVO",
   });
 
-  const handleView = (budget: any) => {
+  // Carregar dados iniciais ao montar o componente
+  React.useEffect(() => {
+    loadBudgets();
+    loadClients();
+    loadServices();
+  }, []);
+
+  // Carregar veículos quando cliente for selecionado
+  React.useEffect(() => {
+    if (createForm.clienteCpfCnpj) {
+      loadVehiclesByClient(createForm.clienteCpfCnpj);
+    } else {
+      setVehicles([]);
+      setCreateForm(prev => ({ ...prev, veiculoPlaca: "" }));
+    }
+  }, [createForm.clienteCpfCnpj]);
+
+  const loadBudgets = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getOrcamentos();
+      
+      // Debug: log do que está sendo retornado
+      console.log("Dados retornados da API:", data);
+      console.log("Tipo dos dados:", typeof data);
+      console.log("É array?", Array.isArray(data));
+      
+      // Garantir que data é um array
+      setBudgets(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      console.error("Erro ao carregar orçamentos:", err);
+      console.error("Detalhes do erro:", err.response?.data);
+      setError(err.message || "Erro ao carregar orçamentos");
+      setBudgets([]); // Definir array vazio em caso de erro
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadClients = async () => {
+    try {
+      setLoadingClients(true);
+      const data = await getClientes();
+      setClients(Array.isArray(data) ? data.filter(c => c.ativo !== false) : []);
+    } catch (err: any) {
+      console.error("Erro ao carregar clientes:", err);
+      setClients([]);
+    } finally {
+      setLoadingClients(false);
+    }
+  };
+
+  const loadVehiclesByClient = async (cpfCnpj: string) => {
+    try {
+      setLoadingVehicles(true);
+      console.log("Carregando veículos para cliente:", cpfCnpj);
+      const data = await getVeiculosByCliente(cpfCnpj);
+      console.log("Veículos carregados:", data);
+      setVehicles(Array.isArray(data) ? data.filter(v => v.status === 'ATIVO') : []);
+    } catch (err: any) {
+      console.error("Erro ao carregar veículos:", err);
+      setVehicles([]);
+      // Não mostrar alert para não interromper o fluxo, apenas log
+    } finally {
+      setLoadingVehicles(false);
+    }
+  };
+
+  const loadServices = async () => {
+    try {
+      setLoadingServices(true);
+      const response = await getServicosList(0, 100);
+      setServices(response.content.filter(s => s.status === 'ATIVO') || []);
+    } catch (err: any) {
+      console.error("Erro ao carregar serviços:", err);
+      setServices([]);
+    } finally {
+      setLoadingServices(false);
+    }
+  };
+
+  // Função para formatar valor em R$
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const handleView = (budget: Orcamento) => {
     setSelectedBudget(budget);
     setIsViewDialogOpen(true);
   };
 
-  const handleEdit = (budget: any) => {
+  const handleEdit = (budget: Orcamento) => {
     setSelectedBudget(budget);
     setEditForm({
-      cliente: budget.cliente,
-      carro: budget.carro,
-      servico: budget.servico,
-      valor: budget.valor,
-      mecanico: budget.mecanico,
+      cpfCnpj: budget.cpfCnpj,
+      placa: budget.veiculoPlaca,
+      nomeServico: budget.servicoNome,
+      valorAjustado: budget.valorAjustado.toString(),
+      status: budget.status,
     });
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (budgetId: number) => {
-    console.log("Excluindo orçamento:", budgetId);
+  const handleDelete = async (numeroOrcamento: number) => {
+    try {
+      await deleteOrcamento(numeroOrcamento);
+      await loadBudgets(); // Recarregar a lista
+      toast.success("Orçamento excluído com sucesso!");
+    } catch (err: any) {
+      console.error("Erro ao excluir orçamento:", err);
+      toast.error(err.message || "Erro ao excluir orçamento");
+    }
   };
 
-  const handleSaveEdit = () => {
-    console.log("Salvando edição:", editForm);
-    setIsEditDialogOpen(false);
+  const handleSaveEdit = async () => {
+    if (!selectedBudget) return;
+    
+    try {
+      const orcamentoData: OrcamentoInput = {
+        cliente: { cpfCnpj: editForm.cpfCnpj },
+        veiculo: { placa: editForm.placa },
+        servico: { nome: editForm.nomeServico },
+        valorAjustado: parseFloat(editForm.valorAjustado),
+        status: editForm.status,
+      };
+
+      await updateOrcamento(selectedBudget.numeroOrcamento, orcamentoData);
+      await loadBudgets(); // Recarregar a lista
+      setIsEditDialogOpen(false);
+      toast.success("Orçamento atualizado com sucesso!");
+    } catch (err: any) {
+      console.error("Erro ao atualizar orçamento:", err);
+      toast.error(err.message || "Erro ao atualizar orçamento");
+    }
   };
 
-  const handleCreateBudget = () => {
-    console.log("Criando novo orçamento");
-    setIsCreateDialogOpen(false);
+  const handleCreateBudget = async () => {
+    try {
+      // Validações
+      if (!createForm.clienteCpfCnpj) {
+        toast.error("Selecione um cliente");
+        return;
+      }
+      if (!createForm.veiculoPlaca) {
+        toast.error("Selecione um veículo");
+        return;
+      }
+      if (!createForm.servicoId) {
+        toast.error("Selecione um serviço");
+        return;
+      }
+      if (!createForm.valorAjustado || parseFloat(createForm.valorAjustado) <= 0) {
+        toast.error("Informe um valor válido");
+        return;
+      }
+
+      const selectedService = services.find(s => s.id.toString() === createForm.servicoId);
+      
+      const orcamentoData: OrcamentoInput = {
+        cliente: { cpfCnpj: createForm.clienteCpfCnpj },
+        veiculo: { placa: createForm.veiculoPlaca },
+        servico: { nome: selectedService?.nome || "" },
+        valorAjustado: parseFloat(createForm.valorAjustado),
+        status: createForm.status,
+      };
+
+      await createOrcamento(orcamentoData);
+      await loadBudgets(); // Recarregar a lista
+      setIsCreateDialogOpen(false);
+      // Limpar o formulário
+      setCreateForm({
+        clienteCpfCnpj: "",
+        veiculoPlaca: "",
+        servicoId: "",
+        valorAjustado: "",
+        status: "ATIVO",
+      });
+      toast.success("Orçamento criado com sucesso!");
+    } catch (err: any) {
+      console.error("Erro ao criar orçamento:", err);
+      toast.error(err.message || "Erro ao criar orçamento");
+    }
   };
 
-  const handleRecoverBudget = () => {
-    console.log("Recuperando orçamento");
-    setIsRecoverDialogOpen(false);
-  };
+  // Filtros e ordenação com paginação
+  const filteredAndSortedBudgets = React.useMemo(() => {
+    let filtered = [...budgets];
+
+    // Filtro por busca
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (budget) =>
+          budget.cpfCnpj.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          budget.veiculoPlaca.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          budget.servicoNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          budget.numeroOrcamento.toString().includes(searchTerm)
+      );
+    }
+
+    // Ordenação
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "latest":
+          return b.numeroOrcamento - a.numeroOrcamento; // Mais recentes
+        case "oldest":
+          return a.numeroOrcamento - b.numeroOrcamento; // Mais antigos
+        case "client":
+          return a.cpfCnpj.localeCompare(b.cpfCnpj); // Cliente A-Z
+        case "value":
+          return b.valorAjustado - a.valorAjustado; // Maior valor
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [budgets, searchTerm, sortBy]);
+
+  // Paginação
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedBudgets.length / ITEMS_PER_PAGE));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentBudgets = filteredAndSortedBudgets.slice(startIndex, endIndex);
 
   // Função para renderizar os botões de ação (evita repetição de código)
   const renderActionButtons = (budget: any) => (
@@ -198,14 +368,14 @@ export default function BudgetScreen() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o orçamento de {budget.cliente}?
+              Tem certeza que deseja excluir o orçamento #{budget.numeroOrcamento} do cliente {budget.cpfCnpj}?
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => handleDelete(budget.id)}
+              onClick={() => handleDelete(budget.numeroOrcamento)}
               className="bg-red-600 hover:bg-red-700"
             >
               Excluir
@@ -222,16 +392,35 @@ export default function BudgetScreen() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-4">
-            Orçamentos
-          </h1>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Orçamentos
+            </h1>
+            {authenticated && timeRemaining > 0 && timeRemaining <= 10 && (
+              <div className="text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
+                Sessão expira em {timeRemaining}min
+              </div>
+            )}
+          </div>
 
           {/* Action Buttons */}
           {/* AJUSTE 2: Empilhar botões em telas pequenas (flex-col) e manter lado a lado em telas maiores (sm:flex-row) */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <Dialog
               open={isCreateDialogOpen}
-              onOpenChange={setIsCreateDialogOpen}
+              onOpenChange={(open) => {
+                setIsCreateDialogOpen(open);
+                if (!open) {
+                  // Limpar formulário ao fechar
+                  setCreateForm({
+                    clienteCpfCnpj: "",
+                    veiculoPlaca: "",
+                    servicoId: "",
+                    valorAjustado: "",
+                    status: "ATIVO",
+                  });
+                }
+              }}
             >
               <DialogTrigger asChild>
                 <Button className="bg-[#5A6ACF] hover:bg-[#5A6ACF] text-white w-full sm:w-auto">
@@ -247,36 +436,127 @@ export default function BudgetScreen() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  {/* Formulário de criação (sem alterações) */}
                   <div className="grid gap-2">
                     <Label htmlFor="new-cliente">Cliente</Label>
-                    <Input id="new-cliente" placeholder="Nome do cliente" />
+                    <Select
+                      value={createForm.clienteCpfCnpj}
+                      onValueChange={(value) =>
+                        setCreateForm({ ...createForm, clienteCpfCnpj: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingClients ? "Carregando clientes..." : "Selecione um cliente"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.map((client) => (
+                          <SelectItem key={client.cpfCnpj} value={client.cpfCnpj}>
+                            {client.nome} - {client.cpfCnpj}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="new-carro">Carro</Label>
-                    <Input id="new-carro" placeholder="Modelo e ano do carro" />
+                    <Label htmlFor="new-veiculo">Veículo</Label>
+                    <Select
+                      value={createForm.veiculoPlaca}
+                      onValueChange={(value) =>
+                        setCreateForm({ ...createForm, veiculoPlaca: value })
+                      }
+                      disabled={!createForm.clienteCpfCnpj}
+                    >
+                      <SelectTrigger>
+                        <SelectValue 
+                          placeholder={
+                            !createForm.clienteCpfCnpj 
+                              ? "Selecione um cliente primeiro" 
+                              : loadingVehicles 
+                                ? "Carregando veículos..." 
+                                : vehicles.length === 0 
+                                  ? "Cliente não possui veículos cadastrados" 
+                                  : "Selecione um veículo"
+                          } 
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {vehicles.map((vehicle) => (
+                          <SelectItem key={vehicle.placa} value={vehicle.placa}>
+                            {vehicle.marca} {vehicle.modelo} ({vehicle.ano}) - {vehicle.placa}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="new-servico">Serviço</Label>
-                    <Textarea
-                      id="new-servico"
-                      placeholder="Descrição do serviço"
+                    <Select
+                      value={createForm.servicoId}
+                      onValueChange={(value) => {
+                        setCreateForm({ ...createForm, servicoId: value });
+                        // Auto-preencher o valor com o preço padrão do serviço
+                        const selectedService = services.find(s => s.id.toString() === value);
+                        if (selectedService && !createForm.valorAjustado) {
+                          setCreateForm(prev => ({ ...prev, valorAjustado: selectedService.preco.toString() }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingServices ? "Carregando serviços..." : "Selecione um serviço"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {services.map((service) => (
+                          <SelectItem key={service.id} value={service.id.toString()}>
+                            {service.nome} - {new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(service.preco)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {createForm.servicoId && (() => {
+                      const selectedService = services.find(s => s.id.toString() === createForm.servicoId);
+                      return selectedService ? (
+                        <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-50 rounded">
+                          <p><strong>Descrição:</strong> {selectedService.descricao}</p>
+                          <p><strong>Duração:</strong> {selectedService.duracao}</p>
+                          <p><strong>Preço padrão:</strong> {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                          }).format(selectedService.preco)}</p>
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="new-valor">Valor Ajustado</Label>
+                    <Input 
+                      id="new-valor" 
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={createForm.valorAjustado}
+                      onChange={(e) =>
+                        setCreateForm({ ...createForm, valorAjustado: e.target.value })
+                      }
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="new-valor">Valor</Label>
-                    <Input id="new-valor" placeholder="R$ 0,00" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="new-mecanico">Mecânico</Label>
-                    <Select>
+                    <Label htmlFor="new-status">Status</Label>
+                    <Select
+                      value={createForm.status}
+                      onValueChange={(value) =>
+                        setCreateForm({ ...createForm, status: value })
+                      }
+                    >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione o mecânico" />
+                        <SelectValue placeholder="Selecione o status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="gustavo">Gustavo</SelectItem>
-                        <SelectItem value="isabely">Isabely</SelectItem>
-                        <SelectItem value="joao">João</SelectItem>
+                        <SelectItem value="ATIVO">ATIVO</SelectItem>
+                        <SelectItem value="INATIVO">INATIVO</SelectItem>
+                        <SelectItem value="CONCLUIDO">CONCLUÍDO</SelectItem>
+                        <SelectItem value="CANCELADO">CANCELADO</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -284,7 +564,16 @@ export default function BudgetScreen() {
                 <DialogFooter>
                   <Button
                     variant="outline"
-                    onClick={() => setIsCreateDialogOpen(false)}
+                    onClick={() => {
+                      setIsCreateDialogOpen(false);
+                      setCreateForm({
+                        clienteCpfCnpj: "",
+                        veiculoPlaca: "",
+                        servicoId: "",
+                        valorAjustado: "",
+                        status: "ATIVO",
+                      });
+                    }}
                   >
                     Cancelar
                   </Button>
@@ -293,46 +582,23 @@ export default function BudgetScreen() {
               </DialogContent>
             </Dialog>
 
-            <Dialog
-              open={isRecoverDialogOpen}
-              onOpenChange={setIsRecoverDialogOpen}
-            >
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="border-blue-600 text-blue-600 hover:bg-purple-100 w-full sm:w-auto"
-                >
-                  <Search className="w-4 h-4 mr-2" />
-                  Recuperar orçamento
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[400px]">
-                <DialogHeader>
-                  <DialogTitle>Recuperar Orçamento</DialogTitle>
-                  <DialogDescription>
-                    Digite o ID ou código do orçamento para recuperá-lo.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="recover-id">ID do Orçamento</Label>
-                    <Input
-                      id="recover-id"
-                      placeholder="Digite o ID do orçamento"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsRecoverDialogOpen(false)}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleRecoverBudget}>Recuperar</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+
+          </div>
+
+          {/* Search Bar */}
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar por CPF/CNPJ, placa, serviço ou número do orçamento..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1); // Reset para primeira página ao buscar
+                }}
+                className="pl-10"
+              />
+            </div>
           </div>
 
           {/* Table Header */}
@@ -343,7 +609,7 @@ export default function BudgetScreen() {
             </span>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <span className="text-sm text-gray-600">Ordenar por:</span>
-              <Select defaultValue="latest">
+              <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-full sm:w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -360,109 +626,176 @@ export default function BudgetScreen() {
 
         {/* AJUSTE 4: ESTRUTURA RESPONSIVA PARA A LISTA */}
 
-        {/* 🖥️ Tabela para Telas Médias e Maiores (md em diante) */}
-        <div className="hidden md:block bg-white rounded-lg shadow-sm border">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-purple-100">
-                <TableHead className="text-[#707FDD] font-medium">
-                  Cliente
-                </TableHead>
-                <TableHead className="text-[#707FDD] font-medium">
-                  Carro
-                </TableHead>
-                <TableHead className="text-[#707FDD] font-medium">
-                  Serviço
-                </TableHead>
-                <TableHead className="text-[#707FDD] font-medium">
-                  Valor (R$)
-                </TableHead>
-                <TableHead className="text-[#707FDD] font-medium">
-                  Mecânico
-                </TableHead>
-                <TableHead className="text-blue-700 font-medium w-32">
-                  Ações
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {budgets.map((budget) => (
-                <TableRow key={budget.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">
-                    {budget.cliente}
-                  </TableCell>
-                  <TableCell>{budget.carro}</TableCell>
-                  <TableCell>{budget.servico}</TableCell>
-                  <TableCell className="font-medium text-green-600">
-                    {budget.valor}
-                  </TableCell>
-                  <TableCell>{budget.mecanico}</TableCell>
-                  <TableCell>{renderActionButtons(budget)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        {/* Loading e Error States */}
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <p>Carregando orçamentos...</p>
+          </div>
+        )}
 
-        {/* 📱 Lista de Cards para Telas Pequenas (até md) */}
-        <div className="grid grid-cols-1 gap-4 md:hidden">
-          {budgets.map((budget) => (
-            <div
-              key={budget.id}
-              className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3"
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{error}</p>
+            <Button 
+              onClick={loadBudgets} 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
             >
-              <div className="flex justify-between items-start">
-                <div className="flex-grow">
-                  <p className="text-sm text-gray-500">Cliente</p>
-                  <p className="font-medium text-gray-900">{budget.cliente}</p>
-                </div>
-                {renderActionButtons(budget)}
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Carro</p>
-                <p className="text-gray-800">{budget.carro}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Serviço</p>
-                <p className="text-gray-800">{budget.servico}</p>
-              </div>
-
-              <div className="flex justify-between items-center mt-2">
-                <div>
-                  <p className="text-sm text-gray-500">Valor</p>
-                  <p className="font-medium text-green-600">{budget.valor}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Mecânico</p>
-                  <p className="text-gray-800">{budget.mecanico}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Pagination */}
-        <div className="flex justify-center mt-6">
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-blue-600 text-white border-blue-600"
-            >
-              1
-            </Button>
-            <Button variant="outline" size="sm">
-              2
-            </Button>
-            <Button variant="outline" size="sm">
-              3
-            </Button>
-            <Button variant="outline" size="sm">
-              &gt;
+              Tentar novamente
             </Button>
           </div>
+        )}
+
+        {/* 🖥️ Tabela para Telas Grandes (md+) */}
+        {!loading && !error && (
+          <div className="hidden md:block bg-white rounded-lg shadow-sm border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">Nº Orçamento</TableHead>
+                  <TableHead className="w-[180px]">Cliente (CPF/CNPJ)</TableHead>
+                  <TableHead className="w-[150px]">Veículo (Placa)</TableHead>
+                  <TableHead className="w-[200px]">Serviço</TableHead>
+                  <TableHead className="w-[120px]">Valor</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[100px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.isArray(currentBudgets) && currentBudgets.length > 0 ? (
+                  currentBudgets.map((budget) => (
+                    <TableRow key={budget.numeroOrcamento}>
+                      <TableCell className="font-medium text-blue-600">
+                        #{budget.numeroOrcamento}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {budget.cpfCnpj}
+                      </TableCell>
+                      <TableCell>{budget.veiculoPlaca}</TableCell>
+                      <TableCell>{budget.servicoNome}</TableCell>
+                      <TableCell className="font-medium text-green-600">
+                        {formatCurrency(budget.valorAjustado)}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          budget.status === 'ATIVO' 
+                            ? 'bg-green-100 text-green-800' 
+                            : budget.status === 'GERADO'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {budget.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>{renderActionButtons(budget)}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      {searchTerm ? `Nenhum orçamento encontrado para "${searchTerm}"` : "Nenhum orçamento encontrado"}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* 📱 Lista de Cards para Telas Pequenas (até md) */}
+        {!loading && !error && (
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {Array.isArray(currentBudgets) && currentBudgets.length > 0 ? (
+              currentBudgets.map((budget) => (
+                <div
+                  key={budget.numeroOrcamento}
+                  className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-grow">
+                      <p className="text-sm text-gray-500">Orçamento #{budget.numeroOrcamento}</p>
+                      <p className="text-sm text-gray-500 mt-1">Cliente (CPF/CNPJ)</p>
+                      <p className="font-medium text-gray-900">{budget.cpfCnpj}</p>
+                    </div>
+                    {renderActionButtons(budget)}
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500">Veículo (Placa)</p>
+                    <p className="text-gray-800">{budget.veiculoPlaca}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500">Serviço</p>
+                    <p className="text-gray-800">{budget.servicoNome}</p>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-2">
+                    <div>
+                      <p className="text-sm text-gray-500">Valor</p>
+                      <p className="font-medium text-green-600">{formatCurrency(budget.valorAjustado)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Status</p>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        budget.status === 'ATIVO' 
+                          ? 'bg-green-100 text-green-800' 
+                          : budget.status === 'GERADO'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {budget.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
+                <p className="text-gray-500">
+                  {searchTerm ? `Nenhum orçamento encontrado para "${searchTerm}"` : "Nenhum orçamento encontrado"}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Pagination */}
+        <div className="flex justify-center items-center mt-6 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1 || filteredAndSortedBudgets.length === 0}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          {filteredAndSortedBudgets.length > 0 && Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <Button
+              key={page}
+              variant={currentPage === page ? "default" : "outline"}
+              size="sm"
+              onClick={() => setCurrentPage(page)}
+              className={currentPage === page ? "bg-[#5A6ACF] text-white" : ""}
+            >
+              {page}
+            </Button>
+          ))}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages || filteredAndSortedBudgets.length === 0}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="text-center text-sm text-gray-500 mt-2">
+          Página {currentPage} de {totalPages} ({filteredAndSortedBudgets.length} orçamentos encontrados)
         </div>
 
         {/* View Dialog (sem alterações) */}
@@ -479,22 +812,36 @@ export default function BudgetScreen() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">
-                      Cliente
+                      Número do Orçamento
                     </Label>
-                    <p className="text-sm">{selectedBudget.cliente}</p>
+                    <p className="text-sm font-medium">{selectedBudget.numeroOrcamento}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">
-                      Carro
+                      Cliente (CPF/CNPJ)
                     </Label>
-                    <p className="text-sm">{selectedBudget.carro}</p>
+                    <p className="text-sm">{selectedBudget.cpfCnpj}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Veículo (Placa)
+                    </Label>
+                    <p className="text-sm">{selectedBudget.veiculoPlaca}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Mecânico
+                    </Label>
+                    <p className="text-sm">{selectedBudget.mecanicoUsername}</p>
                   </div>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">
                     Serviço
                   </Label>
-                  <p className="text-sm">{selectedBudget.servico}</p>
+                  <p className="text-sm">{selectedBudget.servicoNome}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -502,15 +849,29 @@ export default function BudgetScreen() {
                       Valor
                     </Label>
                     <p className="text-sm font-medium text-green-600">
-                      {selectedBudget.valor}
+                      {formatCurrency(selectedBudget.valorAjustado)}
                     </p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">
-                      Mecânico
+                      Status
                     </Label>
-                    <p className="text-sm">{selectedBudget.mecanico}</p>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      selectedBudget.status === 'ATIVO' 
+                        ? 'bg-green-100 text-green-800' 
+                        : selectedBudget.status === 'GERADO'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedBudget.status}
+                    </span>
                   </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Data de Criação
+                  </Label>
+                  <p className="text-sm">{new Date(selectedBudget.dataCriacao).toLocaleString('pt-BR')}</p>
                 </div>
               </div>
             )}
@@ -531,60 +892,67 @@ export default function BudgetScreen() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-cliente">Cliente</Label>
+                <Label htmlFor="edit-cpfCnpj">CPF/CNPJ do Cliente</Label>
                 <Input
-                  id="edit-cliente"
-                  value={editForm.cliente}
+                  id="edit-cpfCnpj"
+                  value={editForm.cpfCnpj}
                   onChange={(e) =>
-                    setEditForm({ ...editForm, cliente: e.target.value })
+                    setEditForm({ ...editForm, cpfCnpj: e.target.value })
                   }
+                  placeholder="000.000.000-00"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-carro">Carro</Label>
+                <Label htmlFor="edit-placa">Placa do Veículo</Label>
                 <Input
-                  id="edit-carro"
-                  value={editForm.carro}
+                  id="edit-placa"
+                  value={editForm.placa}
                   onChange={(e) =>
-                    setEditForm({ ...editForm, carro: e.target.value })
+                    setEditForm({ ...editForm, placa: e.target.value })
                   }
+                  placeholder="ABC1234"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-servico">Serviço</Label>
+                <Label htmlFor="edit-servico">Nome do Serviço</Label>
                 <Textarea
                   id="edit-servico"
-                  value={editForm.servico}
+                  value={editForm.nomeServico}
                   onChange={(e) =>
-                    setEditForm({ ...editForm, servico: e.target.value })
+                    setEditForm({ ...editForm, nomeServico: e.target.value })
                   }
+                  placeholder="Descrição do serviço"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-valor">Valor</Label>
+                <Label htmlFor="edit-valor">Valor Ajustado</Label>
                 <Input
                   id="edit-valor"
-                  value={editForm.valor}
+                  type="number"
+                  step="0.01"
+                  value={editForm.valorAjustado}
                   onChange={(e) =>
-                    setEditForm({ ...editForm, valor: e.target.value })
+                    setEditForm({ ...editForm, valorAjustado: e.target.value })
                   }
+                  placeholder="0.00"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-mecanico">Mecânico</Label>
+                <Label htmlFor="edit-status">Status</Label>
                 <Select
-                  value={editForm.mecanico}
+                  value={editForm.status}
                   onValueChange={(value) =>
-                    setEditForm({ ...editForm, mecanico: value })
+                    setEditForm({ ...editForm, status: value })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Gustavo">Gustavo</SelectItem>
-                    <SelectItem value="Isabely">Isabely</SelectItem>
-                    <SelectItem value="João">João</SelectItem>
+                    <SelectItem value="ATIVO">ATIVO</SelectItem>
+                    <SelectItem value="INATIVO">INATIVO</SelectItem>
+                    <SelectItem value="CONCLUIDO">CONCLUÍDO</SelectItem>
+                    <SelectItem value="CANCELADO">CANCELADO</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

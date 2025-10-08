@@ -15,6 +15,7 @@ import ForgotPassword from "./modules/login/screens/forgot-password";
 import ResetPassword from "./modules/login/screens/reset-password";
 import Home from "./modules/home/screens/home";
 import ProtectedRoute from "./utils/ProtectedRoute";
+import AdminRoute from "./utils/AdminRoute";
 import { ToastContainer } from "react-toastify";
 import BudgetScreen from "./modules/budgets/screens/budgets";
 import OrderScreen from "./modules/orders/screens/order-screen";
@@ -22,6 +23,7 @@ import SchedulingScreen from "./modules/schedules/screens/schedules";
 import ServicesScreen from "./modules/services/screens/services";
 import ClientsScreen from "./modules/clients/screens/clients";
 import VehiclesScreen from "./modules/vehicles/screens/vehicles";
+import UsersScreen from "./modules/users/screens/users";
 
 function App() {
   return (
@@ -122,6 +124,29 @@ function MainLayout() {
             element={
               <ProtectedRoute>
                 <VehiclesScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <UsersScreen />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Configurações</h1>
+                    <p className="text-gray-600 mt-2">Página de configurações em desenvolvimento.</p>
+                  </div>
+                </AdminRoute>
               </ProtectedRoute>
             }
           />

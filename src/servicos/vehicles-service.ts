@@ -260,10 +260,27 @@ export async function getVeiculosByModelo(modelo: string): Promise<Veiculo[]> {
 // Buscar veículos por CPF/CNPJ do cliente
 export async function getVeiculosByCliente(cpfCnpj: string): Promise<Veiculo[]> {
   try {
-    const response = await apiClient.get(`${API_URL}/cliente/${encodeURIComponent(cpfCnpj)}`);
+    const response = await apiClient.get(`${API_URL}/cpfcnpj/${encodeURIComponent(cpfCnpj)}`);
     return response.data.content || response.data; // Dependendo da estrutura da resposta
   } catch (error: any) {
     console.error(`Error searching veículos by cliente ${cpfCnpj}:`, error);
+    if (error.response && error.response.status === 404) {
+      throw new Error("Nenhum veículo encontrado para este cliente.");
+    }
+    if (error.response && error.response.status === 401) {
+      throw new Error("Acesso não autorizado. Faça login novamente.");
+    }
+    throw new Error("Erro ao buscar veículos do cliente. Tente novamente.");
+  }
+}
+
+// Buscar veículos por nome do cliente
+export async function getVeiculosByNome(nome: string): Promise<Veiculo[]> {
+  try {
+    const response = await apiClient.get(`${API_URL}/nome/${encodeURIComponent(nome)}`);
+    return response.data.content || response.data; // Dependendo da estrutura da resposta
+  } catch (error: any) {
+    console.error(`Error searching veículos by nome ${nome}:`, error);
     if (error.response && error.response.status === 404) {
       throw new Error("Nenhum veículo encontrado para este cliente.");
     }

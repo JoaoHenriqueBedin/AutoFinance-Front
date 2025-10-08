@@ -1,6 +1,34 @@
 import axios from "axios";
 import { getToken } from "../servicos/login-service";
 
+// Função para fazer logout completo
+const performLogout = () => {
+  // Limpar todos os dados de autenticação
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("userData");
+  sessionStorage.clear();
+  
+  // Mostrar notificação apenas se não estivermos já na página de login
+  if (window.location.pathname !== "/" && window.location.pathname !== "/login") {
+    // Importar toast dinamicamente para evitar problemas de importação circular
+    import('react-toastify').then(({ toast }) => {
+      toast.warning("Sua sessão expirou. Faça login novamente.", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    });
+  }
+  
+  // Redirecionar para a landing page após um pequeno delay
+  setTimeout(() => {
+    window.location.href = "/";
+  }, 500);
+};
+
 // Configuração global do axios
 export const apiClient = axios.create({
   headers: {
@@ -14,6 +42,15 @@ apiClient.interceptors.request.use(
     const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      // Se não há token válido e não estamos em rotas públicas, fazer logout
+      const currentPath = window.location.pathname;
+      const publicPaths = ["/", "/login", "/signup", "/forgot-password", "/reset-password"];
+      
+      if (!publicPaths.includes(currentPath)) {
+        performLogout();
+        return Promise.reject(new Error("Token não encontrado ou expirado"));
+      }
     }
     return config;
   },
@@ -27,14 +64,20 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Token expirado ou inválido, remover do localStorage
-      localStorage.removeItem("authToken");
-      
-      // Redirecionar para a landing page
-      window.location.href = "/";
-      
-      throw new Error("Sessão expirada. Você será redirecionado para a página inicial.");
+      // Token expirado ou inválido
+      performLogout();
+      return Promise.reject(new Error("Sessão expirada. Redirecionando..."));
     }
+    
+    // Para outros erros de rede ou servidor
+    if (error.response && error.response.status === 403) {
+      return Promise.reject(new Error("Acesso negado. Você não tem permissão para esta ação."));
+    }
+    
+    if (error.response && error.response.status >= 500) {
+      return Promise.reject(new Error("Erro interno do servidor. Tente novamente mais tarde."));
+    }
+    
     return Promise.reject(error);
   }
 );
