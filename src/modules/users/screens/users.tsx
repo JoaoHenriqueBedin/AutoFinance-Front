@@ -48,9 +48,6 @@ import {
   getUsuarios, 
   createUsuario, 
   updateUsuario, 
-  deleteUsuario,
-  toggleUsuarioStatus,
-  resetUsuarioPassword,
   Usuario,
   UsuarioInput,
   UsuarioUpdateInput,
@@ -205,26 +202,68 @@ export default function UsersScreen() {
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = async (id: number, nome: string) => {
+  const handleDelete = async (username: string, nome: string, currentStatus: string) => {
     try {
-      await deleteUsuario(id);
+      // Em vez de excluir, vamos inativar o usuário
+      // Verificar se já está inativo
+      if (currentStatus === "INATIVO") {
+        toast.info(`Usuário ${nome} já está inativo`);
+        return;
+      }
+      
+      // Buscar dados atuais do usuário para manter os outros campos
+      const usuarios = await getUsuarios(0, 1000);
+      const currentUser = usuarios.content.find(u => u.username === username);
+      
+      if (!currentUser) {
+        toast.error("Usuário não encontrado");
+        return;
+      }
+      
+      // Atualizar apenas o status para INATIVO, mantendo os outros dados
+      const userData: UsuarioUpdateInput = {
+        email: currentUser.email,
+        telefone: currentUser.telefone,
+        password: "temp123", // Senha temporária (será mantida a atual no backend)
+        role: currentUser.role,
+        status: "INATIVO",
+      };
+      
+      await updateUsuario(username, userData);
       await loadUsers();
-      toast.success(`Usuário ${nome} excluído com sucesso!`);
+      toast.success(`Usuário ${nome} inativado com sucesso!`);
     } catch (err: any) {
-      console.error("Erro ao excluir usuário:", err);
-      toast.error(err.message || "Erro ao excluir usuário");
+      console.error("Erro ao inativar usuário:", err);
+      toast.error(err.message || "Erro ao inativar usuário");
     }
   };
 
-  const handleToggleStatus = async (id: number, username: string, currentStatus: string) => {
+  const handleToggleStatus = async (username: string, nome: string) => {
     try {
-      await toggleUsuarioStatus(id);
+      // Buscar dados atuais do usuário para manter os outros campos
+      const usuarios = await getUsuarios(0, 1000);
+      const currentUser = usuarios.content.find(u => u.username === username);
+      
+      if (!currentUser) {
+        toast.error("Usuário não encontrado");
+        return;
+      }
+      
+      // Atualizar o status para ATIVO
+      const userData: UsuarioUpdateInput = {
+        email: currentUser.email,
+        telefone: currentUser.telefone,
+        password: "temp123", // Senha temporária (será mantida a atual no backend)
+        role: currentUser.role,
+        status: "ATIVO",
+      };
+      
+      await updateUsuario(username, userData);
       await loadUsers();
-      const newStatus = currentStatus === "ATIVO" ? "desativado" : "ativado";
-      toast.success(`Usuário ${username} ${newStatus} com sucesso!`);
+      toast.success(`Usuário ${nome} ativado com sucesso!`);
     } catch (err: any) {
-      console.error("Erro ao alterar status:", err);
-      toast.error(err.message || "Erro ao alterar status do usuário");
+      console.error("Erro ao ativar usuário:", err);
+      toast.error(err.message || "Erro ao ativar usuário");
     }
   };
 
@@ -370,7 +409,16 @@ export default function UsersScreen() {
     }
     
     try {
-      await resetUsuarioPassword(selectedUser.id!, resetPasswordForm.newPassword);
+      // Usar updateUsuario para atualizar apenas a senha
+      const userData: UsuarioUpdateInput = {
+        email: selectedUser.email,
+        telefone: selectedUser.telefone || "",
+        password: resetPasswordForm.newPassword,
+        role: selectedUser.role,
+        status: selectedUser.status,
+      };
+      
+      await updateUsuario(selectedUser.username, userData);
       setIsResetPasswordDialogOpen(false);
       toast.success(`Senha do usuário ${selectedUser.nome} redefinida com sucesso!`);
     } catch (err: any) {
@@ -436,46 +484,52 @@ export default function UsersScreen() {
         <Key className="h-4 w-4" />
       </Button>
       
-      {/* Toggle Status Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50"
-        onClick={() => handleToggleStatus(user.id!, user.username, user.status)}
-      >
-        <RotateCcw className="h-4 w-4" />
-      </Button>
+      {/* Toggle Status Button - Only show if user is inactive */}
+      {!user.ativo && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50"
+          onClick={() => handleToggleStatus(user.username, user.nome || user.username)}
+          title="Ativar usuário"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+      )}
       
-      {/* Delete Button */}
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir o usuário <strong>{user.nome}</strong> ({user.username})?
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => handleDelete(user.id!, user.username)}
-              className="bg-red-600 hover:bg-red-700"
+      {/* Delete Button - Only show if user is active */}
+      {user.ativo && (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+              title="Inativar usuário"
             >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Inativação</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja inativar o usuário <strong>{user.nome}</strong> ({user.username})?
+                O usuário não poderá mais acessar o sistema.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleDelete(user.username, user.nome || user.username, user.status)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Inativar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 

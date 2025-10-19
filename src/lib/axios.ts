@@ -69,13 +69,14 @@ apiClient.interceptors.response.use(
       return Promise.reject(new Error("Sessão expirada. Redirecionando..."));
     }
     
-    // Para outros erros de rede ou servidor
+    // Para erro 403, adicionar mensagem amigável mas manter o erro original
     if (error.response && error.response.status === 403) {
-      return Promise.reject(new Error("Acesso negado. Você não tem permissão para esta ação."));
+      // Não rejeitar com novo erro, manter o erro original para que os serviços possam ler response.data
+      return Promise.reject(error);
     }
     
     if (error.response && error.response.status >= 500) {
-      return Promise.reject(new Error("Erro interno do servidor. Tente novamente mais tarde."));
+      return Promise.reject(error);
     }
     
     return Promise.reject(error);

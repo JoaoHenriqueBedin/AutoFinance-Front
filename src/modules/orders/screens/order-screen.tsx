@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable no-case-declarations */
 "use client"
 
 import * as React from "react"
-import { Eye, Edit, Trash2, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react"
+import { Eye, Edit, Trash2, Plus, ChevronLeft, ChevronRight, FileText } from "lucide-react"
+import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -33,128 +33,35 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 
-// Dados de exemplo das ordens de serviço
-const serviceOrders = [
-  {
-    id: 1,
-    cliente: "João Silva",
-    carro: "Fiat Uno 2012",
-    servico: "Troca de óleo",
-    valor: "R$ 150,00",
-    mecanico: "Gustavo",
-    status: "Em andamento",
-    dataInicio: "2024-01-15",
-    dataCriacao: new Date("2024-01-15"),
-  },
-  {
-    id: 2,
-    cliente: "Maria Oliveira",
-    carro: "Volkswagen Gol 2018",
-    servico: "Alinhamento e balanceamento",
-    valor: "R$ 120,00",
-    mecanico: "Isabely",
-    status: "Concluído",
-    dataInicio: "2024-01-14",
-    dataCriacao: new Date("2024-01-14"),
-  },
-  {
-    id: 3,
-    cliente: "Carlos Souza",
-    carro: "Chevrolet Onix 2019",
-    servico: "Revisão dos freios",
-    valor: "R$ 250,00",
-    mecanico: "João",
-    status: "Aguardando peças",
-    dataInicio: "2024-01-16",
-    dataCriacao: new Date("2024-01-16"),
-  },
-  {
-    id: 4,
-    cliente: "Ana Paula Lima",
-    carro: "Honda Civic 2020",
-    servico: "Troca do filtro de ar",
-    valor: "R$ 80,00",
-    mecanico: "Gustavo",
-    status: "Concluído",
-    dataInicio: "2024-01-13",
-    dataCriacao: new Date("2024-01-13"),
-  },
-  {
-    id: 5,
-    cliente: "Fernando Ribeiro",
-    carro: "Toyota Corolla 2018",
-    servico: "Revisão dos amortecedores",
-    valor: "R$ 380,00",
-    mecanico: "Isabely",
-    status: "Em andamento",
-    dataInicio: "2024-01-17",
-    dataCriacao: new Date("2024-01-17"),
-  },
-  {
-    id: 6,
-    cliente: "Lucas Martins",
-    carro: "Ford Ka 2016",
-    servico: "Substituição da correia dentada",
-    valor: "R$ 450,00",
-    mecanico: "João",
-    status: "Pendente",
-    dataInicio: "2024-01-18",
-    dataCriacao: new Date("2024-01-18"),
-  },
-  {
-    id: 7,
-    cliente: "Bruno Costa",
-    carro: "Renault Sandero 2017",
-    servico: "Troca da bateria",
-    valor: "R$ 300,00",
-    mecanico: "Gustavo",
-    status: "Em andamento",
-    dataInicio: "2024-01-12",
-    dataCriacao: new Date("2024-01-12"),
-  },
-  {
-    id: 8,
-    cliente: "Patrícia Gomes",
-    carro: "Hyundai HB20 2021",
-    servico: "Higienização do ar-condicionado",
-    valor: "R$ 130,00",
-    mecanico: "Isabely",
-    status: "Concluído",
-    dataInicio: "2024-01-19",
-    dataCriacao: new Date("2024-01-19"),
-  },
-  {
-    id: 9,
-    cliente: "Roberto Santos",
-    carro: "Nissan March 2015",
-    servico: "Troca de pastilhas de freio",
-    valor: "R$ 200,00",
-    mecanico: "João",
-    status: "Aguardando peças",
-    dataInicio: "2024-01-20",
-    dataCriacao: new Date("2024-01-20"),
-  },
-  {
-    id: 10,
-    cliente: "Juliana Costa",
-    carro: "Peugeot 208 2019",
-    servico: "Revisão geral",
-    valor: "R$ 500,00",
-    mecanico: "Gustavo",
-    status: "Em andamento",
-    dataInicio: "2024-01-21",
-    dataCriacao: new Date("2024-01-21"),
-  },
-]
+// Importar serviços
+import {
+  getOrdensServico,
+  createOrdemServicoFromOrcamento,
+  deleteOrdemServico,
+  OrdemServico,
+} from "@/servicos/orders-service"
+import { getClientes, Cliente } from "@/servicos/clients-service"
+import { getVeiculos, Veiculo } from "@/servicos/vehicles-service"
+import { getServicosList, Servico } from "@/servicos/services-service"
 
-const ITEMS_PER_PAGE = 5
+const ITEMS_PER_PAGE = 10
 
 export default function ServiceOrdersScreen() {
-  const [selectedOrder, setSelectedOrder] = React.useState<any>(null)
+  // Estados para dados da API
+  const [orders, setOrders] = React.useState<OrdemServico[]>([])
+  const [clientes, setClientes] = React.useState<Cliente[]>([])
+  const [veiculos, setVeiculos] = React.useState<Veiculo[]>([])
+  const [servicos, setServicos] = React.useState<Servico[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+  
+  // Estados para controle dos diálogos
+  const [selectedOrder, setSelectedOrder] = React.useState<OrdemServico | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
   const [isRecoverDialogOpen, setIsRecoverDialogOpen] = React.useState(false)
+  const [orcamentoIdInput, setOrcamentoIdInput] = React.useState("")
   const [sortBy, setSortBy] = React.useState("latest")
   const [currentPage, setCurrentPage] = React.useState(1)
   const [editForm, setEditForm] = React.useState({
@@ -166,20 +73,73 @@ export default function ServiceOrdersScreen() {
     status: "",
   })
 
+  // Carregar dados ao montar o componente
+  React.useEffect(() => {
+    loadAllData()
+  }, [])
+
+  const loadAllData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Carregar todos os dados em paralelo
+      const [ordersData, clientesData, veiculosData, servicosData] = await Promise.all([
+        getOrdensServico(),
+        getClientes(),
+        getVeiculos(),
+        getServicosList(0, 1000),
+      ])
+      
+      setOrders(ordersData)
+      setClientes(clientesData)
+      setVeiculos(Array.isArray(veiculosData) ? veiculosData : veiculosData.content)
+      setServicos(servicosData.content)
+    } catch (err: any) {
+      console.error("Erro ao carregar dados:", err)
+      setError(err.message || "Erro ao carregar dados")
+      toast.error(err.message || "Erro ao carregar dados")
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  // Buscar nome do cliente por CPF/CNPJ
+  const getClienteNome = (cpfCnpj: string) => {
+    if (!cpfCnpj) return "N/A"
+    
+    // Normalizar CPF/CNPJ removendo pontos, traços e barras
+    const normalizarCpfCnpj = (valor: string) => valor.replace(/[.\-/]/g, '')
+    const cpfCnpjNormalizado = normalizarCpfCnpj(cpfCnpj)
+    
+    const cliente = clientes.find(c => normalizarCpfCnpj(c.cpfCnpj) === cpfCnpjNormalizado)
+    return cliente?.nome || cpfCnpj
+  }
+
+  // Buscar informações do veículo por placa
+  const getVeiculoInfo = (placa: string) => {
+    if (!placa) return "N/A"
+    const veiculo = veiculos.find(v => v.placa === placa)
+    return veiculo ? `${veiculo.marca} ${veiculo.modelo} ${veiculo.ano}` : placa
+  }
+
+  // Obter valor da ordem (API retorna "valor", mas pode ter "valorAjustado" em alguns casos)
+  const getValorOrdem = (order: OrdemServico): number => {
+    return order.valor || order.valorAjustado || 0
+  }
+
   // Função de ordenação
   const sortedOrders = React.useMemo(() => {
-    const sorted = [...serviceOrders].sort((a, b) => {
+    const sorted = [...orders].sort((a, b) => {
       switch (sortBy) {
         case "latest":
-          return b.dataCriacao.getTime() - a.dataCriacao.getTime()
+          return new Date(b.dataCriacao).getTime() - new Date(a.dataCriacao).getTime()
         case "oldest":
-          return a.dataCriacao.getTime() - b.dataCriacao.getTime()
+          return new Date(a.dataCriacao).getTime() - new Date(b.dataCriacao).getTime()
         case "client":
-          return a.cliente.localeCompare(b.cliente)
+          return getClienteNome(a.clienteCpfCnpj || '').localeCompare(getClienteNome(b.clienteCpfCnpj || ''))
         case "value":
-          const valueA = Number.parseFloat(a.valor.replace(/[R$\s.,]/g, ""))
-          const valueB = Number.parseFloat(b.valor.replace(/[R$\s.,]/g, ""))
-          return valueB - valueA
+          return getValorOrdem(b) - getValorOrdem(a)
         case "status":
           return a.status.localeCompare(b.status)
         default:
@@ -187,7 +147,7 @@ export default function ServiceOrdersScreen() {
       }
     })
     return sorted
-  }, [sortBy])
+  }, [orders, sortBy, clientes]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Paginação
   const totalPages = Math.ceil(sortedOrders.length / ITEMS_PER_PAGE)
@@ -200,50 +160,85 @@ export default function ServiceOrdersScreen() {
     setIsViewDialogOpen(true)
   }
 
-  const handleEdit = (order: any) => {
+  const handleEdit = (order: OrdemServico) => {
     setSelectedOrder(order)
     setEditForm({
-      cliente: order.cliente,
-      carro: order.carro,
-      servico: order.servico,
-      valor: order.valor,
-      mecanico: order.mecanico,
+      cliente: getClienteNome(order.clienteCpfCnpj || ''),
+      carro: getVeiculoInfo(order.veiculoPlaca),
+      servico: order.servicoNome,
+      valor: getValorOrdem(order).toString(),
+      mecanico: order.mecanicoUsername || '',
       status: order.status,
     })
     setIsEditDialogOpen(true)
   }
 
-  const handleDelete = (orderId: number) => {
-    console.log("Excluindo ordem de serviço:", orderId)
+  const handleDelete = async (numeroOrdem: number) => {
+    try {
+      await deleteOrdemServico(numeroOrdem)
+      await loadAllData()
+      toast.success("Ordem de serviço excluída com sucesso!")
+    } catch (err: any) {
+      console.error("Erro ao excluir ordem de serviço:", err)
+      toast.error(err.message || "Erro ao excluir ordem de serviço")
+    }
   }
 
-  const handleSaveEdit = () => {
-    console.log("Salvando edição:", editForm)
-    setIsEditDialogOpen(false)
+  const handleSaveEdit = async () => {
+    if (!selectedOrder) return
+    
+    try {
+      // A API não permite edição completa, então vamos apenas mostrar mensagem
+      toast.info("Funcionalidade de edição em desenvolvimento")
+      setIsEditDialogOpen(false)
+    } catch (err: any) {
+      console.error("Erro ao atualizar ordem de serviço:", err)
+      toast.error(err.message || "Erro ao atualizar ordem de serviço")
+    }
   }
 
   const handleCreateOrder = () => {
-    console.log("Criando nova ordem de serviço")
+    toast.info("Use o botão 'Criar a partir de orçamento' para criar uma ordem de serviço")
     setIsCreateDialogOpen(false)
   }
 
-  const handleRecoverOrder = () => {
-    console.log("Recuperando ordem de serviço")
-    setIsRecoverDialogOpen(false)
+  const handleRecoverOrder = async () => {
+    if (!orcamentoIdInput.trim()) {
+      toast.error("Digite o número do orçamento")
+      return
+    }
+    
+    const numeroOrcamento = Number.parseInt(orcamentoIdInput)
+    if (isNaN(numeroOrcamento) || numeroOrcamento <= 0) {
+      toast.error("Número do orçamento inválido")
+      return
+    }
+    
+    try {
+      await createOrdemServicoFromOrcamento(numeroOrcamento)
+      await loadAllData()
+      setIsRecoverDialogOpen(false)
+      setOrcamentoIdInput("")
+      toast.success("Ordem de serviço criada a partir do orçamento!")
+    } catch (err: any) {
+      console.error("Erro ao criar ordem a partir do orçamento:", err)
+      toast.error(err.message || "Erro ao criar ordem a partir do orçamento")
+    }
   }
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      "Em andamento": { color: "bg-blue-100 text-blue-800", text: "Em andamento" },
-      Concluído: { color: "bg-green-100 text-green-800", text: "Concluído" },
-      "Aguardando peças": { color: "bg-yellow-100 text-yellow-800", text: "Aguardando peças" },
-      Pendente: { color: "bg-gray-100 text-gray-800", text: "Pendente" },
+    const statusConfig: Record<string, { color: string; text: string }> = {
+      ATIVO: { color: "bg-green-100 text-green-800", text: "Ativo" },
+      EM_ANDAMENTO: { color: "bg-blue-100 text-blue-800", text: "Em Andamento" },
+      CONCLUIDO: { color: "bg-gray-100 text-gray-800", text: "Concluído" },
+      CANCELADO: { color: "bg-red-100 text-red-800", text: "Cancelado" },
+      PENDENTE: { color: "bg-yellow-100 text-yellow-800", text: "Pendente" },
     }
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig["Pendente"]
+    const config = statusConfig[status] || statusConfig["PENDENTE"]
     return <Badge className={`${config.color} hover:${config.color}`}>{config.text}</Badge>
   }
 
-  const renderActionButtons = (order: any) => (
+  const renderActionButtons = (order: OrdemServico) => (
     <div className="flex gap-1">
       <Button
         variant="ghost"
@@ -271,12 +266,12 @@ export default function ServiceOrdersScreen() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir a ordem de serviço de {order.cliente}? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir a ordem de serviço #{order.numeroOrdem || order.numero}? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleDelete(order.id)} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={() => handleDelete(order.numeroOrdem || order.numero || 0)} className="bg-red-600 hover:bg-red-700">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -363,26 +358,32 @@ export default function ServiceOrdersScreen() {
             <Dialog open={isRecoverDialogOpen} onOpenChange={setIsRecoverDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-purple-100 w-full sm:w-auto">
-                  <Search className="w-4 h-4 mr-2" />
-                  Recuperar ordem de serviço
+                  <FileText className="w-4 h-4 mr-2" />
+                  Criar a partir de orçamento
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[400px]">
                 <DialogHeader>
-                  <DialogTitle>Recuperar Ordem de Serviço</DialogTitle>
-                  <DialogDescription>Digite o ID ou código da ordem de serviço para recuperá-la.</DialogDescription>
+                  <DialogTitle>Criar Ordem a partir de Orçamento</DialogTitle>
+                  <DialogDescription>Digite o número do orçamento aprovado para criar uma ordem de serviço.</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="recover-id">ID da Ordem</Label>
-                    <Input id="recover-id" placeholder="Digite o ID da ordem" />
+                    <Label htmlFor="recover-id">Número do Orçamento</Label>
+                    <Input 
+                      id="recover-id" 
+                      type="number" 
+                      placeholder="Digite o número do orçamento" 
+                      value={orcamentoIdInput}
+                      onChange={(e) => setOrcamentoIdInput(e.target.value)}
+                    />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsRecoverDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={handleRecoverOrder}>Recuperar</Button>
+                  <Button onClick={handleRecoverOrder}>Criar Ordem</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -409,7 +410,24 @@ export default function ServiceOrdersScreen() {
           </div>
         </div>
 
+        {/* Loading e Error States */}
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <p>Carregando ordens de serviço...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{error}</p>
+            <Button onClick={loadAllData} variant="outline" size="sm" className="mt-2">
+              Tentar novamente
+            </Button>
+          </div>
+        )}
+
         {/* Desktop Table */}
+        {!loading && !error && (
         <div className="hidden md:block bg-white rounded-lg shadow-sm border">
           <Table>
             <TableHeader>
@@ -425,12 +443,14 @@ export default function ServiceOrdersScreen() {
             </TableHeader>
             <TableBody>
               {currentOrders.map((order) => (
-                <TableRow key={order.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{order.cliente}</TableCell>
-                  <TableCell>{order.carro}</TableCell>
-                  <TableCell>{order.servico}</TableCell>
-                  <TableCell className="font-medium text-green-600">{order.valor}</TableCell>
-                  <TableCell>{order.mecanico}</TableCell>
+                <TableRow key={order.numeroOrdem || order.numero || order.id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium">{getClienteNome(order.clienteCpfCnpj || '')}</TableCell>
+                  <TableCell>{getVeiculoInfo(order.veiculoPlaca)}</TableCell>
+                  <TableCell>{order.servicoNome}</TableCell>
+                  <TableCell className="font-medium text-green-600">
+                    {getValorOrdem(order).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </TableCell>
+                  <TableCell>{order.mecanicoUsername || 'N/A'}</TableCell>
                   <TableCell>{getStatusBadge(order.status)}</TableCell>
                   <TableCell>{renderActionButtons(order)}</TableCell>
                 </TableRow>
@@ -438,37 +458,41 @@ export default function ServiceOrdersScreen() {
             </TableBody>
           </Table>
         </div>
+        )}
 
         {/* Mobile Cards */}
+        {!loading && !error && (
         <div className="grid grid-cols-1 gap-4 md:hidden">
           {currentOrders.map((order) => (
-            <div key={order.id} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3">
+            <div key={order.numeroOrdem || order.numero || order.id} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3">
               <div className="flex justify-between items-start">
                 <div className="flex-grow">
                   <p className="text-sm text-gray-500">Cliente</p>
-                  <p className="font-medium text-gray-900">{order.cliente}</p>
+                  <p className="font-medium text-gray-900">{getClienteNome(order.clienteCpfCnpj || '')}</p>
                 </div>
                 {renderActionButtons(order)}
               </div>
 
               <div>
                 <p className="text-sm text-gray-500">Carro</p>
-                <p className="text-gray-800">{order.carro}</p>
+                <p className="text-gray-800">{getVeiculoInfo(order.veiculoPlaca)}</p>
               </div>
 
               <div>
                 <p className="text-sm text-gray-500">Serviço</p>
-                <p className="text-gray-800">{order.servico}</p>
+                <p className="text-gray-800">{order.servicoNome}</p>
               </div>
 
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm text-gray-500">Valor</p>
-                  <p className="font-medium text-green-600">{order.valor}</p>
+                  <p className="font-medium text-green-600">
+                    {getValorOrdem(order).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Mecânico</p>
-                  <p className="text-gray-800">{order.mecanico}</p>
+                  <p className="text-gray-800">{order.mecanicoUsername}</p>
                 </div>
               </div>
 
@@ -479,6 +503,7 @@ export default function ServiceOrdersScreen() {
             </div>
           ))}
         </div>
+        )}
 
         {/* Pagination */}
         <div className="flex justify-center items-center mt-6 gap-2">
@@ -528,37 +553,53 @@ export default function ServiceOrdersScreen() {
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Cliente</Label>
-                    <p className="text-sm">{selectedOrder.cliente}</p>
+                    <Label className="text-sm font-medium text-gray-500">Nº Ordem</Label>
+                    <p className="text-sm font-semibold">#{selectedOrder.numeroOrdem}</p>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Carro</Label>
-                    <p className="text-sm">{selectedOrder.carro}</p>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Serviço</Label>
-                  <p className="text-sm">{selectedOrder.servico}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Valor</Label>
-                    <p className="text-sm font-medium text-green-600">{selectedOrder.valor}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Mecânico</Label>
-                    <p className="text-sm">{selectedOrder.mecanico}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Status</Label>
                     {getStatusBadge(selectedOrder.status)}
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Data de Início</Label>
-                    <p className="text-sm">{selectedOrder.dataInicio}</p>
+                    <Label className="text-sm font-medium text-gray-500">Cliente</Label>
+                    <p className="text-sm">{getClienteNome(selectedOrder.clienteCpfCnpj || '')}</p>
+                    <p className="text-xs text-gray-400">{selectedOrder.clienteCpfCnpj}</p>
                   </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Veículo</Label>
+                    <p className="text-sm">{getVeiculoInfo(selectedOrder.veiculoPlaca)}</p>
+                    <p className="text-xs text-gray-400">{selectedOrder.veiculoPlaca}</p>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Serviço</Label>
+                  <p className="text-sm">{selectedOrder.servicoNome}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Valor</Label>
+                    <p className="text-sm font-medium text-green-600">
+                      {getValorOrdem(selectedOrder).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Mecânico</Label>
+                    <p className="text-sm">{selectedOrder.mecanicoUsername}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Data de Criação</Label>
+                    <p className="text-sm">{new Date(selectedOrder.dataCriacao).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                  {selectedOrder.numeroOrcamento && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Orçamento</Label>
+                      <p className="text-sm">#{selectedOrder.numeroOrcamento}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -137,19 +137,6 @@ function MainLayout() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <AdminRoute>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Configurações</h1>
-                    <p className="text-gray-600 mt-2">Página de configurações em desenvolvimento.</p>
-                  </div>
-                </AdminRoute>
-              </ProtectedRoute>
-            }
-          />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
