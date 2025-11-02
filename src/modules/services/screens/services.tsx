@@ -33,6 +33,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { Loading } from "@/components/ui/loading"
 
 
 
@@ -82,9 +83,16 @@ export default function ServicesScreen() {
     try {
       setLoading(true)
       setError(null)
-      const response = await getServicosList(0, 1000) // Buscar todos os serviços
-      setServices(response.content || []) // Garantir que sempre seja um array
+      
+      console.log('Iniciando carregamento de serviços...') // Debug
+      const data = await getServicosList()
+      console.log('Dados recebidos da API:', data) // Debug
+      console.log('É um array?', Array.isArray(data)) // Debug
+      console.log('Quantidade de itens:', data?.length) // Debug
+      
+      setServices(data || [])
     } catch (err) {
+      console.error('Erro ao carregar serviços:', err) // Debug
       setError(err instanceof Error ? err.message : 'Erro ao carregar serviços')
       setServices([]) // Definir array vazio em caso de erro
       toast.error('Erro ao carregar serviços')
@@ -407,19 +415,7 @@ export default function ServicesScreen() {
 
   // Loading state
   if (loading) {
-    return (
-      <div className="flex-1 p-4 sm:p-6 min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-4">Serviços</h1>
-          <div className="flex justify-center items-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#5A6ACF] mx-auto mb-4"></div>
-              <p className="text-gray-600">Carregando serviços...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <Loading message="Carregando serviços..." fullScreen />
   }
 
   return (

@@ -34,6 +34,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { Loading } from "@/components/ui/loading"
+import { ErrorDisplay } from "@/components/ui/error-display"
 
 const ITEMS_PER_PAGE = 6
 
@@ -93,10 +95,14 @@ export default function VehiclesScreen() {
           getClientes()
         ])
         
-        setVehiclesList(vehiclesData)
-        setClientsList(clientsData.map(client => ({
-          cpfCnpj: client.cpfCnpj,
-          nome: client.nome
+        // Garantir que vehiclesData seja sempre um array
+        setVehiclesList(Array.isArray(vehiclesData) ? vehiclesData : [])
+        
+        // Garantir que clientsData seja sempre um array e mapear corretamente
+        const clients = Array.isArray(clientsData) ? clientsData : []
+        setClientsList(clients.map(client => ({
+          cpfCnpj: client?.cpfCnpj || '',
+          nome: client?.nome || ''
         })))
       } catch (err) {
         console.error("Erro ao carregar dados:", err)
@@ -111,45 +117,61 @@ export default function VehiclesScreen() {
 
   // Função de ordenação e filtros
   const filteredAndSortedVehicles = React.useMemo(() => {
+    // Verificar se vehiclesList é um array válido
+    if (!Array.isArray(vehiclesList)) {
+      return []
+    }
+
     let filtered = vehiclesList
 
     // Filtro por status
     if (filterStatus !== "todos") {
-      filtered = filtered.filter((vehicle) => vehicle.status === filterStatus)
+      filtered = filtered.filter((vehicle) => vehicle && vehicle.status === filterStatus)
     }
 
     // Filtro por marca
     if (filterBrand !== "todas") {
-      filtered = filtered.filter((vehicle) => vehicle.marca.toLowerCase() === filterBrand.toLowerCase())
+      filtered = filtered.filter((vehicle) => vehicle && vehicle.marca && vehicle.marca.toLowerCase() === filterBrand.toLowerCase())
     }
 
     // Filtro por busca
     if (searchTerm) {
       filtered = filtered.filter(
         (vehicle) =>
-          vehicle.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          vehicle &&
+          vehicle.placa &&
+          vehicle.marca &&
+          vehicle.modelo &&
+          vehicle.cliente &&
+          vehicle.cliente.nome &&
+          vehicle.chassi &&
+          (vehicle.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
           vehicle.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
           vehicle.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
           vehicle.cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vehicle.chassi.toLowerCase().includes(searchTerm.toLowerCase()),
+          vehicle.chassi.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     }
 
     // Ordenação
     const sorted = [...filtered].sort((a, b) => {
+      if (!a || !b) return 0
+      
       switch (sortBy) {
         case "latest":
+          if (!a.cliente?.dataCadastro || !b.cliente?.dataCadastro) return 0
           return new Date(b.cliente.dataCadastro).getTime() - new Date(a.cliente.dataCadastro).getTime()
         case "oldest":
+          if (!a.cliente?.dataCadastro || !b.cliente?.dataCadastro) return 0
           return new Date(a.cliente.dataCadastro).getTime() - new Date(b.cliente.dataCadastro).getTime()
         case "plate":
-          return a.placa.localeCompare(b.placa)
+          return a.placa?.localeCompare(b.placa || '') || 0
         case "brand":
-          return a.marca.localeCompare(b.marca)
+          return a.marca?.localeCompare(b.marca || '') || 0
         case "year":
-          return b.ano - a.ano
+          return (b.ano || 0) - (a.ano || 0)
         case "client":
-          return a.cliente.nome.localeCompare(b.cliente.nome)
+          return a.cliente?.nome?.localeCompare(b.cliente?.nome || '') || 0
         case "services":
           return 0 // Sem dados de serviços na API atual
         default:
@@ -161,10 +183,10 @@ export default function VehiclesScreen() {
   }, [vehiclesList, sortBy, filterStatus, filterBrand, searchTerm])
 
   // Paginação
-  const totalPages = Math.ceil(filteredAndSortedVehicles.length / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil((filteredAndSortedVehicles?.length || 0) / ITEMS_PER_PAGE) || 1
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const endIndex = startIndex + ITEMS_PER_PAGE
-  const currentVehicles = filteredAndSortedVehicles.slice(startIndex, endIndex)
+  const currentVehicles = Array.isArray(filteredAndSortedVehicles) ? filteredAndSortedVehicles.slice(startIndex, endIndex) : []
 
   const handleView = (vehicle: any) => {
     setSelectedVehicle(vehicle)
@@ -466,35 +488,11 @@ export default function VehiclesScreen() {
   )
 
   if (isLoading) {
-    return (
-      <div className="flex-1 p-4 sm:p-6 min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5A6ACF] mx-auto mb-4"></div>
-              <p className="text-gray-600">Carregando veículos...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <Loading message="Carregando veículos..." fullScreen />
   }
 
   if (error) {
-    return (
-      <div className="flex-1 p-4 sm:p-6 min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <p className="text-red-600 mb-4">{error}</p>
-              <Button onClick={() => window.location.reload()} className="bg-[#5A6ACF] hover:bg-[#5A6ACF]">
-                Tentar novamente
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <ErrorDisplay message={error} onRetry={() => window.location.reload()} fullScreen />
   }
 
   return (
@@ -750,108 +748,122 @@ export default function VehiclesScreen() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentVehicles.map((vehicle) => (
-                <TableRow key={vehicle.placa} className="hover:bg-gray-50">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Car className="w-4 h-4 text-[#707FDD]" />
-                      </div>
-                      <div>
-                        <p className="font-medium">
-                          {vehicle.marca} {vehicle.modelo}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            className={`${getBrandColor(vehicle.marca)} hover:${getBrandColor(vehicle.marca)} text-xs`}
-                          >
-                            {vehicle.marca}
-                          </Badge>
-                          <span className="text-xs text-gray-500">{vehicle.cor}</span>
+              {currentVehicles.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                    Nenhum veículo encontrado
+                  </TableCell>
+                </TableRow>
+              ) : (
+                currentVehicles.map((vehicle) => (
+                  <TableRow key={vehicle.placa} className="hover:bg-gray-50">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                          <Car className="w-4 h-4 text-[#707FDD]" />
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {vehicle.marca} {vehicle.modelo}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              className={`${getBrandColor(vehicle.marca)} hover:${getBrandColor(vehicle.marca)} text-xs`}
+                            >
+                              {vehicle.marca}
+                            </Badge>
+                            <span className="text-xs text-gray-500">{vehicle.cor}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">{vehicle.cliente.nome}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono font-medium">{vehicle.placa}</TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <p className="font-medium">{vehicle.ano}</p>
-                      <p className="text-gray-500">{formatKm(vehicle.quilometragem)}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-center">
-                      <p className="font-medium text-[#707FDD]">-</p>
-                      <p className="text-xs text-gray-500">Sem dados</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
-                  <TableCell>{renderActionButtons(vehicle)}</TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm">{vehicle.cliente.nome}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono font-medium">{vehicle.placa}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <p className="font-medium">{vehicle.ano}</p>
+                        <p className="text-gray-500">{formatKm(vehicle.quilometragem)}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-center">
+                        <p className="font-medium text-[#707FDD]">-</p>
+                        <p className="text-xs text-gray-500">Sem dados</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
+                    <TableCell>{renderActionButtons(vehicle)}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
 
         {/* Mobile Cards */}
         <div className="grid grid-cols-1 gap-4 md:hidden">
-          {currentVehicles.map((vehicle) => (
-            <div key={vehicle.placa} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3 flex-grow">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Car className="w-5 h-5 text-[#707FDD]" />
+          {currentVehicles.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-sm border p-8 text-center text-gray-500">
+              Nenhum veículo encontrado
+            </div>
+          ) : (
+            currentVehicles.map((vehicle) => (
+              <div key={vehicle.placa} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3 flex-grow">
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Car className="w-5 h-5 text-[#707FDD]" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {vehicle.marca} {vehicle.modelo}
+                      </p>
+                      <p className="text-sm text-gray-500 font-mono">{vehicle.placa}</p>
+                    </div>
+                  </div>
+                  {renderActionButtons(vehicle)}
+                </div>
+
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <span>{vehicle.cliente.nome}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Ano/Cor</p>
+                    <p className="text-sm font-medium">
+                      {vehicle.ano} • {vehicle.cor}
+                    </p>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">
-                      {vehicle.marca} {vehicle.modelo}
-                    </p>
-                    <p className="text-sm text-gray-500 font-mono">{vehicle.placa}</p>
+                    <p className="text-sm text-gray-500">Quilometragem</p>
+                    <p className="text-sm font-medium">{formatKm(vehicle.quilometragem)}</p>
                   </div>
                 </div>
-                {renderActionButtons(vehicle)}
-              </div>
 
-              <div className="flex items-center gap-2 text-sm">
-                <User className="w-4 h-4 text-gray-400" />
-                <span>{vehicle.cliente.nome}</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Ano/Cor</p>
-                  <p className="text-sm font-medium">
-                    {vehicle.ano} • {vehicle.cor}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Quilometragem</p>
-                  <p className="text-sm font-medium">{formatKm(vehicle.quilometragem)}</p>
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-500">Combustível</p>
+                    <p className="font-medium">{vehicle.combustivel}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-500">Status</p>
+                    {getStatusBadge(vehicle.status)}
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-500">RENAVAM</p>
+                    <p className="text-xs font-mono">{vehicle.renavam}</p>
+                  </div>
                 </div>
               </div>
-
-              <div className="flex justify-between items-center pt-2 border-t">
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Combustível</p>
-                  <p className="font-medium">{vehicle.combustivel}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Status</p>
-                  {getStatusBadge(vehicle.status)}
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">RENAVAM</p>
-                  <p className="text-xs font-mono">{vehicle.renavam}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Pagination */}
@@ -888,7 +900,7 @@ export default function VehiclesScreen() {
         </div>
 
         <div className="text-center text-sm text-gray-500 mt-2">
-          Página {currentPage} de {totalPages} ({filteredAndSortedVehicles.length} veículos encontrados)
+          Página {currentPage} de {totalPages} ({filteredAndSortedVehicles?.length || 0} veículos encontrados)
         </div>
 
         {/* View Dialog */}

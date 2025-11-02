@@ -43,6 +43,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loading } from "@/components/ui/loading";
+import { ErrorDisplay } from "@/components/ui/error-display";
 
 import { 
   getUsuarios, 
@@ -739,25 +741,8 @@ export default function UsersScreen() {
         </div>
 
         {/* Loading e Error States */}
-        {loading && (
-          <div className="flex justify-center items-center py-8">
-            <p>Carregando usuários...</p>
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-            <p>{error}</p>
-            <Button 
-              onClick={loadUsers} 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-            >
-              Tentar novamente
-            </Button>
-          </div>
-        )}
+        {loading && <Loading message="Carregando usuários..." />}
+        {error && <ErrorDisplay message={error} onRetry={loadUsers} />}
 
         {/* Desktop Table */}
         {!loading && !error && (

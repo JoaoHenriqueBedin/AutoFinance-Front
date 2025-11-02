@@ -45,6 +45,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Loading } from "@/components/ui/loading";
+import { ErrorDisplay } from "@/components/ui/error-display";
 import { 
   getOrcamentos, 
   createOrcamento, 
@@ -125,18 +127,13 @@ export default function BudgetScreen() {
     try {
       setLoading(true);
       setError(null);
-      const data = await getOrcamentos();
       
-      // Debug: log do que está sendo retornado
-      console.log("Dados retornados da API:", data);
-      console.log("Tipo dos dados:", typeof data);
-      console.log("É array?", Array.isArray(data));
+      const data = await getOrcamentos();
       
       // Garantir que data é um array
       setBudgets(Array.isArray(data) ? data : []);
     } catch (err: any) {
       console.error("Erro ao carregar orçamentos:", err);
-      console.error("Detalhes do erro:", err.response?.data);
       setError(err.message || "Erro ao carregar orçamentos");
       setBudgets([]); // Definir array vazio em caso de erro
     } finally {
@@ -176,8 +173,8 @@ export default function BudgetScreen() {
   const loadServices = async () => {
     try {
       setLoadingServices(true);
-      const response = await getServicosList(0, 100);
-      setServices(response.content.filter(s => s.status === 'ATIVO') || []);
+      const data = await getServicosList();
+      setServices(data.filter(s => s.status === 'ATIVO') || []);
     } catch (err: any) {
       console.error("Erro ao carregar serviços:", err);
       setServices([]);
@@ -275,7 +272,13 @@ export default function BudgetScreen() {
       };
 
       await createOrcamento(orcamentoData);
-      await loadBudgets(); // Recarregar a lista
+      
+      // Aguardar um pouco para garantir que o backend processou
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Recarregar a lista
+      await loadBudgets();
+      
       setIsCreateDialogOpen(false);
       // Limpar o formulário
       setCreateForm({
@@ -627,25 +630,10 @@ export default function BudgetScreen() {
         {/* AJUSTE 4: ESTRUTURA RESPONSIVA PARA A LISTA */}
 
         {/* Loading e Error States */}
-        {loading && (
-          <div className="flex justify-center items-center py-8">
-            <p>Carregando orçamentos...</p>
-          </div>
-        )}
+        {loading && <Loading message="Carregando orçamentos..." />}
+        {error && <ErrorDisplay message={error} onRetry={loadBudgets} />}
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-            <p>{error}</p>
-            <Button 
-              onClick={loadBudgets} 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-            >
-              Tentar novamente
-            </Button>
-          </div>
-        )}
+
 
         {/* 🖥️ Tabela para Telas Grandes (md+) */}
         {!loading && !error && (

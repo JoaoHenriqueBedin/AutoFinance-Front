@@ -37,19 +37,23 @@ export interface ServicosResponse {
 }
 
 // Funções do serviço
-export const getServicosList = async (
-  page: number = 0,
-  size: number = 10,
-  sort: string = 'id,desc'
-): Promise<ServicosResponse> => {
+// Buscar todos os serviços (sem paginação, igual ao serviço de clientes)
+export const getServicosList = async (): Promise<Servico[]> => {
   try {
-    const response = await apiClient.get(API_URL, {
-      params: {
-        page,
-        size,
-        sort
+    console.log('Fazendo requisição para:', API_URL) // Debug
+    
+    const response = await apiClient.get(`${API_URL}?_t=${Date.now()}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     })
+    
+    console.log('Status da resposta:', response.status) // Debug
+    console.log('Dados da resposta:', response.data) // Debug
+    console.log('Tipo dos dados:', Array.isArray(response.data) ? 'Array' : 'Object') // Debug
+    
     return response.data
   } catch (error) {
     console.error('Erro ao buscar serviços:', error)
@@ -171,13 +175,7 @@ export const reactivateServico = async (servico: Servico): Promise<Servico> => {
   }
 }
 
-// Função auxiliar para buscar todos os serviços (sem paginação)
+// Função auxiliar para buscar todos os serviços (alias para compatibilidade)
 export const getAllServicos = async (): Promise<Servico[]> => {
-  try {
-    const response = await getServicosList(0, 1000) // Buscar uma quantidade grande
-    return response.content
-  } catch (error) {
-    console.error('Erro ao buscar todos os serviços:', error)
-    throw new Error('Erro ao carregar serviços')
-  }
+  return getServicosList()
 }

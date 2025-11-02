@@ -117,7 +117,20 @@ export async function getVeiculos(page: number = 0, size: number = 20): Promise<
 export async function getVeiculosList(): Promise<Veiculo[]> {
   try {
     const response = await getVeiculos(0, 1000); // Busca um número grande para pegar todos
-    return response.content;
+    
+    // Garantir que sempre retorne um array
+    if (response && Array.isArray(response.content)) {
+      return response.content;
+    }
+    
+    // Se response.content não existe ou não é array, tentar response diretamente
+    if (Array.isArray(response)) {
+      return response;
+    }
+    
+    // Se nada disso funcionou, retornar array vazio
+    console.warn("API retornou dados em formato inesperado:", response);
+    return [];
   } catch (error) {
     console.error("Error fetching veículos list:", error);
     throw error;

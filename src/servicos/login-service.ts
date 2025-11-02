@@ -80,7 +80,7 @@ export function getToken(): string | null {
 export async function forgotPassword(email: string) {
   try {
     const response = await axios.post(
-      "https://autofinance.azurewebsites.net/auth/forgot-password",
+      "https://autofinance.azurewebsites.net/auth/resetar-senha",
       { email },
       {
         headers: {

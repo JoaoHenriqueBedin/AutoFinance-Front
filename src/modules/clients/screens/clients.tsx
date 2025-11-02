@@ -957,7 +957,10 @@ export default function ClientsScreen() {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
-                    Carregando clientes...
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#5A6ACF] mr-3"></div>
+                      <span className="text-gray-600">Carregando clientes...</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : error ? (
@@ -1023,7 +1026,12 @@ export default function ClientsScreen() {
         {/* Mobile Cards */}
         <div className="grid grid-cols-1 gap-4 md:hidden">
           {loading ? (
-            <div className="text-center py-8">Carregando clientes...</div>
+            <div className="text-center py-8">
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#5A6ACF] mr-3"></div>
+                <span className="text-gray-600">Carregando clientes...</span>
+              </div>
+            </div>
           ) : error ? (
             <div className="text-center py-8 text-red-600">{error}</div>
           ) : currentClients.length === 0 ? (

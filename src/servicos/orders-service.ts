@@ -58,7 +58,8 @@ export interface OrdemServicoInput {
   cliente: { cpfCnpj: string };
   veiculo: { placa: string };
   servico: { nome: string };
-  valorAjustado: number;
+  mecanico: { username: string };
+  valor: number;
   status: string;
 }
 
@@ -67,7 +68,8 @@ export interface OrdemServicoUpdateInput {
   cliente?: { cpfCnpj: string };
   veiculo?: { placa: string };
   servico?: { nome: string };
-  valorAjustado?: number;
+  mecanico?: { username: string };
+  valor?: number;
   status?: string;
 }
 
@@ -235,16 +237,16 @@ export async function createOrdemServicoFromOrcamento(numeroOrcamento: number): 
  * Atualizar ordem de serviço
  */
 export async function updateOrdemServico(
-  numeroOrdem: number,
+  id: number,
   ordemServico: OrdemServicoUpdateInput
 ): Promise<OrdemServico> {
   try {
-    console.log(`Atualizando ordem de serviço ${numeroOrdem}:`, ordemServico);
-    const response = await apiClient.put(`${API_URL}/${numeroOrdem}`, ordemServico);
+    console.log(`Atualizando ordem de serviço com ID ${id}:`, ordemServico);
+    const response = await apiClient.put(`${API_URL}/${id}`, ordemServico);
     console.log("Ordem de serviço atualizada com sucesso:", response.data);
     return response.data;
   } catch (error: any) {
-    console.error(`Error updating ordem de serviço ${numeroOrdem}:`, error);
+    console.error(`Error updating ordem de serviço ${id}:`, error);
     console.error("Error details:", {
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -266,6 +268,9 @@ export async function updateOrdemServico(
       }
       if (errorMessage.toLowerCase().includes("serviço")) {
         throw new Error("Serviço não encontrado. Verifique o nome do serviço.");
+      }
+      if (errorMessage.toLowerCase().includes("mecanico") || errorMessage.toLowerCase().includes("mecânico")) {
+        throw new Error("Mecânico não encontrado. Verifique o username do mecânico.");
       }
       throw new Error("Dados inválidos. Verifique os campos e tente novamente.");
     }
@@ -306,6 +311,47 @@ export async function deleteOrdemServico(numeroOrdem: number): Promise<void> {
     }
     
     throw new Error("Erro ao deletar ordem de serviço. Tente novamente.");
+  }
+}
+
+/**
+ * Inativar ordem de serviço (mudança de status via PUT)
+ */
+export async function inactivateOrdemServico(id: number): Promise<OrdemServico> {
+  try {
+    console.log(`Inativando ordem de serviço com ID ${id}`);
+    
+    // Usar PUT com payload contendo apenas o status INATIVO
+    const payload = { status: "INATIVO" };
+    const response = await apiClient.put(`${API_URL}/${id}`, payload);
+    
+    console.log("Ordem de serviço inativada com sucesso:", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error inactivating ordem de serviço ${id}:`, error);
+    console.error("Error details:", {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+    });
+    
+    if (error.response && error.response.status === 404) {
+      throw new Error("Ordem de serviço não encontrada.");
+    }
+    
+    if (error.response && error.response.status === 400) {
+      throw new Error("Não foi possível inativar a ordem de serviço. Verifique se ela está em um status válido.");
+    }
+    
+    if (error.response && error.response.status === 401) {
+      throw new Error("Acesso não autorizado. Faça login novamente.");
+    }
+    
+    if (error.response && error.response.status === 403) {
+      throw new Error("Você não tem permissão para inativar ordens de serviço.");
+    }
+    
+    throw new Error("Erro ao inativar ordem de serviço. Tente novamente.");
   }
 }
 
