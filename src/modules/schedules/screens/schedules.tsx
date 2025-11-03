@@ -3,6 +3,17 @@
 
 import * as React from "react"
 import { Eye, Edit, Trash2, Search, ChevronLeft, ChevronRight, User } from "lucide-react"
+import { 
+  getAgendamentos, 
+  createAgendamento, 
+  updateAgendamento, 
+  deleteAgendamento,
+  type Agendamento,
+  type AgendamentoInput,
+  type AgendamentoForm
+} from "@/servicos/schedules-service"
+import { Loading } from "@/components/ui/loading"
+import { ErrorDisplay } from "@/components/ui/error-display"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -31,131 +42,26 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-// Dados de exemplo dos agendamentos
-const appointments = [
-  {
-    id: 1,
-    cliente: "João Silva",
-    automovel: "Fiat Uno 2012",
-    telefone: "(11) 9 1234-5678",
-    hora: "08:00",
-    mecanico: "Gustavo",
-    data: "2024-01-22",
-    servico: "Troca de óleo",
-    observacoes: "Cliente preferencial",
-  },
-  {
-    id: 2,
-    cliente: "Maria Oliveira",
-    automovel: "Volkswagen Gol 2015",
-    telefone: "(21) 9 8765-4321",
-    hora: "08:00",
-    mecanico: "Isabely",
-    data: "2024-01-22",
-    servico: "Alinhamento e balanceamento",
-    observacoes: "",
-  },
-  {
-    id: 3,
-    cliente: "Carlos Souza",
-    automovel: "Chevrolet Onix 2019",
-    telefone: "(31) 9 2345-6789",
-    hora: "08:00",
-    mecanico: "João",
-    data: "2024-01-22",
-    servico: "Revisão dos freios",
-    observacoes: "Urgente",
-  },
-  {
-    id: 4,
-    cliente: "Ana Paula Lima",
-    automovel: "Honda Civic 2020",
-    telefone: "(41) 9 9876-5432",
-    hora: "09:00",
-    mecanico: "Gustavo",
-    data: "2024-01-22",
-    servico: "Troca do filtro de ar",
-    observacoes: "",
-  },
-  {
-    id: 5,
-    cliente: "Fernando Ribeiro",
-    automovel: "Toyota Corolla 2018",
-    telefone: "(51) 9 3456-7890",
-    hora: "09:00",
-    mecanico: "Isabely",
-    data: "2024-01-22",
-    servico: "Revisão dos amortecedores",
-    observacoes: "Cliente novo",
-  },
-  {
-    id: 6,
-    cliente: "Lucas Martins",
-    automovel: "Ford Ka 2016",
-    telefone: "(61) 9 7654-3210",
-    hora: "09:00",
-    mecanico: "João",
-    data: "2024-01-22",
-    servico: "Substituição da correia dentada",
-    observacoes: "",
-  },
-  {
-    id: 7,
-    cliente: "Bruno Costa",
-    automovel: "Renault Sandero 2017",
-    telefone: "(71) 9 4567-8901",
-    hora: "10:00",
-    mecanico: "Gustavo",
-    data: "2024-01-22",
-    servico: "Troca da bateria",
-    observacoes: "Garantia",
-  },
-  {
-    id: 8,
-    cliente: "Patrícia Gomes",
-    automovel: "Hyundai HB20 2021",
-    telefone: "(85) 9 6543-2109",
-    hora: "10:00",
-    mecanico: "Isabely",
-    data: "2024-01-22",
-    servico: "Higienização do ar-condicionado",
-    observacoes: "",
-  },
-  {
-    id: 9,
-    cliente: "Roberto Santos",
-    automovel: "Nissan March 2015",
-    telefone: "(11) 9 8888-7777",
-    hora: "10:30",
-    mecanico: "João",
-    data: "2024-01-22",
-    servico: "Troca de pastilhas de freio",
-    observacoes: "Retorno",
-  },
-  {
-    id: 10,
-    cliente: "Juliana Costa",
-    automovel: "Peugeot 208 2019",
-    telefone: "(21) 9 5555-4444",
-    hora: "11:00",
-    mecanico: "Gustavo",
-    data: "2024-01-22",
-    servico: "Revisão geral",
-    observacoes: "Agendamento especial",
-  },
-]
-
-const ITEMS_PER_PAGE = 8
+const ITEMS_PER_PAGE = 5
 
 export default function SchedulingScreen() {
-  const [selectedAppointment, setSelectedAppointment] = React.useState<any>(null)
+  // Estados para dados da API
+  const [appointments, setAppointments] = React.useState<Agendamento[]>([])
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  
+  // Estados existentes
+  const [selectedAppointment, setSelectedAppointment] = React.useState<Agendamento | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
   const [selectedMechanic, setSelectedMechanic] = React.useState("todos")
   const [searchTerm, setSearchTerm] = React.useState("")
   const [currentPage, setCurrentPage] = React.useState(1)
-  const [editForm, setEditForm] = React.useState({
+  const [editForm, setEditForm] = React.useState<AgendamentoForm>({
+    dataAgendada: "",
+    status: "AGENDADO",
+    observacoes: "",
     cliente: "",
     automovel: "",
     telefone: "",
@@ -163,8 +69,38 @@ export default function SchedulingScreen() {
     mecanico: "",
     data: "",
     servico: "",
-    observacoes: "",
   })
+  const [createForm, setCreateForm] = React.useState<AgendamentoForm>({
+    dataAgendada: "",
+    status: "AGENDADO",
+    observacoes: "",
+    cliente: "",
+    automovel: "",
+    telefone: "",
+    hora: "",
+    mecanico: "",
+    data: "",
+    servico: "",
+  })
+
+  // Carregar agendamentos da API
+  const loadAgendamentos = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await getAgendamentos()
+      setAppointments(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao carregar agendamentos")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Carregar dados na inicialização
+  React.useEffect(() => {
+    loadAgendamentos()
+  }, [])
 
   // Filtros e busca
   const filteredAppointments = React.useMemo(() => {
@@ -172,22 +108,25 @@ export default function SchedulingScreen() {
 
     // Filtro por mecânico
     if (selectedMechanic !== "todos") {
-      filtered = filtered.filter((appointment) => appointment.mecanico.toLowerCase() === selectedMechanic.toLowerCase())
+      filtered = filtered.filter((appointment) => 
+        appointment.mecanico?.toLowerCase() === selectedMechanic.toLowerCase()
+      )
     }
 
     // Filtro por busca
     if (searchTerm) {
       filtered = filtered.filter(
         (appointment) =>
-          appointment.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          appointment.automovel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          appointment.telefone.includes(searchTerm) ||
-          appointment.servico.toLowerCase().includes(searchTerm.toLowerCase()),
+          appointment.cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          appointment.automovel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          appointment.telefone?.includes(searchTerm) ||
+          appointment.servico?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          appointment.observacoes?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     return filtered
-  }, [selectedMechanic, searchTerm])
+  }, [appointments, selectedMechanic, searchTerm])
 
   // Paginação
   const totalPages = Math.ceil(filteredAppointments.length / ITEMS_PER_PAGE)
@@ -200,36 +139,81 @@ export default function SchedulingScreen() {
     setIsViewDialogOpen(true)
   }
 
-  const handleEdit = (appointment: any) => {
+  const handleEdit = (appointment: Agendamento) => {
     setSelectedAppointment(appointment)
     setEditForm({
-      cliente: appointment.cliente,
-      automovel: appointment.automovel,
-      telefone: appointment.telefone,
-      hora: appointment.hora,
-      mecanico: appointment.mecanico,
-      data: appointment.data,
-      servico: appointment.servico,
-      observacoes: appointment.observacoes,
+      dataAgendada: appointment.dataAgendada,
+      status: appointment.status,
+      observacoes: appointment.observacoes || "",
+      cliente: appointment.cliente || "",
+      automovel: appointment.automovel || "",
+      telefone: appointment.telefone || "",
+      hora: appointment.hora || "",
+      mecanico: appointment.mecanico || "",
+      data: appointment.data || "",
+      servico: appointment.servico || "",
     })
     setIsEditDialogOpen(true)
   }
 
-  const handleDelete = (appointmentId: number) => {
-    console.log("Excluindo agendamento:", appointmentId)
+  const handleDelete = async (appointmentId: number) => {
+    try {
+      await deleteAgendamento(appointmentId)
+      await loadAgendamentos() // Recarregar lista
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir agendamento")
+    }
   }
 
-  const handleSaveEdit = () => {
-    console.log("Salvando edição:", editForm)
-    setIsEditDialogOpen(false)
+  const handleSaveEdit = async () => {
+    try {
+      if (!selectedAppointment?.id) return
+      
+      const agendamentoData: AgendamentoInput = {
+        dataAgendada: editForm.dataAgendada,
+        status: editForm.status,
+        observacoes: editForm.observacoes,
+      }
+      
+      await updateAgendamento(selectedAppointment.id, agendamentoData)
+      setIsEditDialogOpen(false)
+      await loadAgendamentos() // Recarregar lista
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar agendamento")
+    }
   }
 
-  const handleCreateAppointment = () => {
-    console.log("Criando novo agendamento")
-    setIsCreateDialogOpen(false)
+  const handleCreateAppointment = async () => {
+    try {
+      const agendamentoData: AgendamentoInput = {
+        dataAgendada: createForm.dataAgendada,
+        status: createForm.status,
+        observacoes: createForm.observacoes,
+      }
+      
+      await createAgendamento(agendamentoData)
+      setIsCreateDialogOpen(false)
+      await loadAgendamentos() // Recarregar lista
+      
+      // Limpar formulário
+      setCreateForm({
+        dataAgendada: "",
+        status: "AGENDADO",
+        observacoes: "",
+        cliente: "",
+        automovel: "",
+        telefone: "",
+        hora: "",
+        mecanico: "",
+        data: "",
+        servico: "",
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao criar agendamento")
+    }
   }
 
-  const renderActionButtons = (appointment: any) => (
+  const renderActionButtons = (appointment: Agendamento) => (
     <div className="flex gap-1">
       <Button
         variant="ghost"
@@ -262,7 +246,7 @@ export default function SchedulingScreen() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleDelete(appointment.id)} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={() => handleDelete(appointment.id!)} className="bg-red-600 hover:bg-red-700">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -270,6 +254,29 @@ export default function SchedulingScreen() {
       </AlertDialog>
     </div>
   )
+
+  // Estados de loading e erro
+  if (loading) {
+    return (
+      <div className="flex-1 p-4 sm:p-6 min-h-screen">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-6">Agendamentos</h1>
+          <Loading />
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 p-4 sm:p-6 min-h-screen">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-6">Agendamentos</h1>
+          <ErrorDisplay message={error} onRetry={loadAgendamentos} />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 p-4 sm:p-6 min-h-screen">
@@ -313,48 +320,42 @@ export default function SchedulingScreen() {
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="new-cliente">Cliente</Label>
-                        <Input id="new-cliente" placeholder="Nome do cliente" />
+                        <Label htmlFor="new-data">Data e Hora</Label>
+                        <Input 
+                          id="new-data" 
+                          type="datetime-local"
+                          value={createForm.dataAgendada}
+                          onChange={(e) => setCreateForm({ ...createForm, dataAgendada: e.target.value })}
+                        />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="new-telefone">Telefone</Label>
-                        <Input id="new-telefone" placeholder="(00) 0 0000-0000" />
-                      </div>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="new-automovel">Automóvel</Label>
-                      <Input id="new-automovel" placeholder="Modelo e ano do automóvel" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="new-data">Data</Label>
-                        <Input id="new-data" type="date" />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="new-hora">Hora</Label>
-                        <Input id="new-hora" type="time" />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="new-mecanico">Mecânico</Label>
-                        <Select>
+                        <Label htmlFor="new-status">Status</Label>
+                        <Select
+                          value={createForm.status}
+                          onValueChange={(value: "AGENDADO" | "CONFIRMADO" | "CANCELADO" | "CONCLUIDO") => 
+                            setCreateForm({ ...createForm, status: value })
+                          }
+                        >
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
+                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="gustavo">Gustavo</SelectItem>
-                            <SelectItem value="isabely">Isabely</SelectItem>
-                            <SelectItem value="joao">João</SelectItem>
+                            <SelectItem value="AGENDADO">Agendado</SelectItem>
+                            <SelectItem value="CONFIRMADO">Confirmado</SelectItem>
+                            <SelectItem value="CANCELADO">Cancelado</SelectItem>
+                            <SelectItem value="CONCLUIDO">Concluído</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="new-servico">Serviço</Label>
-                      <Input id="new-servico" placeholder="Descrição do serviço" />
-                    </div>
-                    <div className="grid gap-2">
                       <Label htmlFor="new-observacoes">Observações</Label>
-                      <Textarea id="new-observacoes" placeholder="Observações adicionais (opcional)" />
+                      <Textarea 
+                        id="new-observacoes" 
+                        placeholder="Observações adicionais (opcional)"
+                        value={createForm.observacoes}
+                        onChange={(e) => setCreateForm({ ...createForm, observacoes: e.target.value })}
+                      />
                     </div>
                   </div>
                   <DialogFooter>
@@ -381,9 +382,9 @@ export default function SchedulingScreen() {
             </div>
           </div>
 
-          {/* Today's Appointments Label */}
+          {/* Appointments Label */}
           <div className="mb-4">
-            <h2 className="text-lg font-medium text-blue-600">Agendamentos do dia:</h2>
+            <h2 className="text-lg font-medium text-blue-600">Agendamentos:</h2>
           </div>
         </div>
 
@@ -392,66 +393,94 @@ export default function SchedulingScreen() {
           <Table>
             <TableHeader>
               <TableRow className="bg-purple-100">
-                <TableHead className="text-blue-700 font-medium">Cliente</TableHead>
-                <TableHead className="text-blue-700 font-medium">Automóvel</TableHead>
-                <TableHead className="text-blue-700 font-medium">Telefone</TableHead>
-                <TableHead className="text-blue-700 font-medium">Hora</TableHead>
-                <TableHead className="text-blue-700 font-medium">Mecânico</TableHead>
+                <TableHead className="text-blue-700 font-medium">Data/Hora</TableHead>
+                <TableHead className="text-blue-700 font-medium">Status</TableHead>
+                <TableHead className="text-blue-700 font-medium">Observações</TableHead>
                 <TableHead className="text-blue-700 font-medium w-32">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentAppointments.map((appointment) => (
-                <TableRow key={appointment.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{appointment.cliente}</TableCell>
-                  <TableCell>{appointment.automovel}</TableCell>
-                  <TableCell>{appointment.telefone}</TableCell>
-                  <TableCell className="font-medium">{appointment.hora}</TableCell>
-                  <TableCell>{appointment.mecanico}</TableCell>
-                  <TableCell>{renderActionButtons(appointment)}</TableCell>
+              {currentAppointments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                    {filteredAppointments.length === 0 && appointments.length > 0
+                      ? "Nenhum agendamento encontrado com os filtros aplicados"
+                      : "Nenhum agendamento cadastrado"}
+                  </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                currentAppointments.map((appointment) => (
+                  <TableRow key={appointment.id} className="hover:bg-gray-50">
+                    <TableCell className="font-medium">
+                      {new Date(appointment.dataAgendada).toLocaleString('pt-BR')}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        appointment.status === 'AGENDADO' ? 'bg-yellow-100 text-yellow-800' :
+                        appointment.status === 'CONFIRMADO' ? 'bg-blue-100 text-blue-800' :
+                        appointment.status === 'CONCLUIDO' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {appointment.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>{appointment.observacoes || "-"}</TableCell>
+                    <TableCell>{renderActionButtons(appointment)}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
 
         {/* Mobile Cards */}
         <div className="grid grid-cols-1 gap-4 md:hidden">
-          {currentAppointments.map((appointment) => (
-            <div key={appointment.id} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3">
-              <div className="flex justify-between items-start">
-                <div className="flex-grow">
-                  <p className="text-sm text-gray-500">Cliente</p>
-                  <p className="font-medium text-gray-900">{appointment.cliente}</p>
-                </div>
-                {renderActionButtons(appointment)}
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Automóvel</p>
-                <p className="text-gray-800">{appointment.automovel}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Telefone</p>
-                  <p className="text-gray-800">{appointment.telefone}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Hora</p>
-                  <p className="font-medium text-gray-900">{appointment.hora}</p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Mecânico</p>
-                <p className="text-gray-800">{appointment.mecanico}</p>
-              </div>
+          {currentAppointments.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
+              <p className="text-gray-500">
+                {filteredAppointments.length === 0 && appointments.length > 0
+                  ? "Nenhum agendamento encontrado com os filtros aplicados"
+                  : "Nenhum agendamento cadastrado"}
+              </p>
             </div>
-          ))}
+          ) : (
+            currentAppointments.map((appointment) => (
+              <div key={appointment.id} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-grow">
+                    <p className="text-sm text-gray-500">Data/Hora</p>
+                    <p className="font-medium text-gray-900">
+                      {new Date(appointment.dataAgendada).toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                  {renderActionButtons(appointment)}
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500">Status</p>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    appointment.status === 'AGENDADO' ? 'bg-yellow-100 text-yellow-800' :
+                    appointment.status === 'CONFIRMADO' ? 'bg-blue-100 text-blue-800' :
+                    appointment.status === 'CONCLUIDO' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {appointment.status}
+                  </span>
+                </div>
+
+                {appointment.observacoes && (
+                  <div>
+                    <p className="text-sm text-gray-500">Observações</p>
+                    <p className="text-gray-800">{appointment.observacoes}</p>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
 
         {/* Pagination */}
+        {totalPages > 1 && (
         <div className="flex justify-center items-center mt-6 gap-2">
           <Button
             variant="outline"
@@ -462,17 +491,97 @@ export default function SchedulingScreen() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <Button
-              key={page}
-              variant={currentPage === page ? "default" : "outline"}
-              size="sm"
-              onClick={() => setCurrentPage(page)}
-              className={currentPage === page ? "bg-blue-600 text-white" : ""}
-            >
-              {page}
-            </Button>
-          ))}
+          {(() => {
+            const pages = []
+            const maxVisiblePages = 7 // Número máximo de páginas visíveis
+            
+            if (totalPages <= maxVisiblePages) {
+              // Se há poucas páginas, mostra todas
+              for (let i = 1; i <= totalPages; i++) {
+                pages.push(
+                  <Button
+                    key={i}
+                    variant={currentPage === i ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(i)}
+                    className={currentPage === i ? "bg-[#5A6ACF] text-white" : ""}
+                  >
+                    {i}
+                  </Button>
+                )
+              }
+            } else {
+              // Lógica para muitas páginas com "..."
+              
+              // Primeira página
+              pages.push(
+                <Button
+                  key={1}
+                  variant={currentPage === 1 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(1)}
+                  className={currentPage === 1 ? "bg-[#5A6ACF] text-white" : ""}
+                >
+                  1
+                </Button>
+              )
+
+              // "..." inicial se necessário
+              if (currentPage > 4) {
+                pages.push(
+                  <span key="start-ellipsis" className="px-2 text-gray-500">
+                    ...
+                  </span>
+                )
+              }
+
+              // Páginas ao redor da atual
+              const start = Math.max(2, currentPage - 1)
+              const end = Math.min(totalPages - 1, currentPage + 1)
+              
+              for (let i = start; i <= end; i++) {
+                if (i !== 1 && i !== totalPages) {
+                  pages.push(
+                    <Button
+                      key={i}
+                      variant={currentPage === i ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(i)}
+                      className={currentPage === i ? "bg-[#5A6ACF] text-white" : ""}
+                    >
+                      {i}
+                    </Button>
+                  )
+                }
+              }
+
+              // "..." final se necessário
+              if (currentPage < totalPages - 3) {
+                pages.push(
+                  <span key="end-ellipsis" className="px-2 text-gray-500">
+                    ...
+                  </span>
+                )
+              }
+
+              // Última página
+              if (totalPages > 1) {
+                pages.push(
+                  <Button
+                    key={totalPages}
+                    variant={currentPage === totalPages ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(totalPages)}
+                    className={currentPage === totalPages ? "bg-[#5A6ACF] text-white" : ""}
+                  >
+                    {totalPages}
+                  </Button>
+                )
+              }
+            }
+            
+            return pages
+          })()}
 
           <Button
             variant="outline"
@@ -483,10 +592,13 @@ export default function SchedulingScreen() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+        )}
 
+        {filteredAppointments.length > 0 && (
         <div className="text-center text-sm text-gray-500 mt-2">
-          Página {currentPage} de {totalPages} ({filteredAppointments.length} agendamentos encontrados)
+          Página {currentPage} de {totalPages} • {filteredAppointments.length} agendamento{filteredAppointments.length !== 1 ? 's' : ''} encontrado{filteredAppointments.length !== 1 ? 's' : ''}
         </div>
+        )}
 
         {/* View Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
@@ -497,37 +609,20 @@ export default function SchedulingScreen() {
             </DialogHeader>
             {selectedAppointment && (
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Cliente</Label>
-                    <p className="text-sm">{selectedAppointment.cliente}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Telefone</Label>
-                    <p className="text-sm">{selectedAppointment.telefone}</p>
-                  </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Data/Hora</Label>
+                  <p className="text-sm">{new Date(selectedAppointment.dataAgendada).toLocaleString('pt-BR')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Automóvel</Label>
-                  <p className="text-sm">{selectedAppointment.automovel}</p>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Data</Label>
-                    <p className="text-sm">{selectedAppointment.data}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Hora</Label>
-                    <p className="text-sm font-medium">{selectedAppointment.hora}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Mecânico</Label>
-                    <p className="text-sm">{selectedAppointment.mecanico}</p>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Serviço</Label>
-                  <p className="text-sm">{selectedAppointment.servico}</p>
+                  <Label className="text-sm font-medium text-gray-500">Status</Label>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    selectedAppointment.status === 'AGENDADO' ? 'bg-yellow-100 text-yellow-800' :
+                    selectedAppointment.status === 'CONFIRMADO' ? 'bg-blue-100 text-blue-800' :
+                    selectedAppointment.status === 'CONCLUIDO' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {selectedAppointment.status}
+                  </span>
                 </div>
                 {selectedAppointment.observacoes && (
                   <div>
@@ -553,73 +648,33 @@ export default function SchedulingScreen() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-cliente">Cliente</Label>
-                  <Input
-                    id="edit-cliente"
-                    value={editForm.cliente}
-                    onChange={(e) => setEditForm({ ...editForm, cliente: e.target.value })}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-telefone">Telefone</Label>
-                  <Input
-                    id="edit-telefone"
-                    value={editForm.telefone}
-                    onChange={(e) => setEditForm({ ...editForm, telefone: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-automovel">Automóvel</Label>
-                <Input
-                  id="edit-automovel"
-                  value={editForm.automovel}
-                  onChange={(e) => setEditForm({ ...editForm, automovel: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-data">Data</Label>
+                  <Label htmlFor="edit-data">Data e Hora</Label>
                   <Input
                     id="edit-data"
-                    type="date"
-                    value={editForm.data}
-                    onChange={(e) => setEditForm({ ...editForm, data: e.target.value })}
+                    type="datetime-local"
+                    value={editForm.dataAgendada}
+                    onChange={(e) => setEditForm({ ...editForm, dataAgendada: e.target.value })}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-hora">Hora</Label>
-                  <Input
-                    id="edit-hora"
-                    type="time"
-                    value={editForm.hora}
-                    onChange={(e) => setEditForm({ ...editForm, hora: e.target.value })}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-mecanico">Mecânico</Label>
+                  <Label htmlFor="edit-status">Status</Label>
                   <Select
-                    value={editForm.mecanico}
-                    onValueChange={(value) => setEditForm({ ...editForm, mecanico: value })}
+                    value={editForm.status}
+                    onValueChange={(value: "AGENDADO" | "CONFIRMADO" | "CANCELADO" | "CONCLUIDO") => 
+                      setEditForm({ ...editForm, status: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Gustavo">Gustavo</SelectItem>
-                      <SelectItem value="Isabely">Isabely</SelectItem>
-                      <SelectItem value="João">João</SelectItem>
+                      <SelectItem value="AGENDADO">Agendado</SelectItem>
+                      <SelectItem value="CONFIRMADO">Confirmado</SelectItem>
+                      <SelectItem value="CANCELADO">Cancelado</SelectItem>
+                      <SelectItem value="CONCLUIDO">Concluído</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-servico">Serviço</Label>
-                <Input
-                  id="edit-servico"
-                  value={editForm.servico}
-                  onChange={(e) => setEditForm({ ...editForm, servico: e.target.value })}
-                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-observacoes">Observações</Label>
