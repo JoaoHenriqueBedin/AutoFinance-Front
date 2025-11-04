@@ -5,6 +5,8 @@
 
 @import "tw-animate-css";
 
+@import "react-toastify/dist/ReactToastify.css";
+
 @custom-variant dark (&:is(.dark *));
 
 body {

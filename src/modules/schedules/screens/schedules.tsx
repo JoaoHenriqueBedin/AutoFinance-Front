@@ -12,6 +12,7 @@ import {
   type AgendamentoInput,
   type AgendamentoForm
 } from "@/servicos/schedules-service"
+import { getMecanicos, type Usuario } from "@/servicos/users-service"
 import { Loading } from "@/components/ui/loading"
 import { ErrorDisplay } from "@/components/ui/error-display"
 
@@ -49,6 +50,11 @@ export default function SchedulingScreen() {
   const [appointments, setAppointments] = React.useState<Agendamento[]>([])
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [mecanicos, setMecanicos] = React.useState<Usuario[]>([])
+  const [loadingMecanicos, setLoadingMecanicos] = React.useState(false)
+
+  // Função auxiliar para obter mecânico padrão
+  const getDefaultMechanic = () => mecanicos.length > 0 ? mecanicos[0].username : ""
   
   // Estados existentes
   const [selectedAppointment, setSelectedAppointment] = React.useState<Agendamento | null>(null)
@@ -58,29 +64,17 @@ export default function SchedulingScreen() {
   const [selectedMechanic, setSelectedMechanic] = React.useState("todos")
   const [searchTerm, setSearchTerm] = React.useState("")
   const [currentPage, setCurrentPage] = React.useState(1)
+  const [isUpdating, setIsUpdating] = React.useState(false)
   const [editForm, setEditForm] = React.useState<AgendamentoForm>({
     dataAgendada: "",
-    status: "AGENDADO",
     observacoes: "",
-    cliente: "",
-    automovel: "",
-    telefone: "",
-    hora: "",
-    mecanico: "",
-    data: "",
-    servico: "",
+    mecanicoUsername: "",
   })
   const [createForm, setCreateForm] = React.useState<AgendamentoForm>({
+    id: 0,
     dataAgendada: "",
-    status: "AGENDADO",
     observacoes: "",
-    cliente: "",
-    automovel: "",
-    telefone: "",
-    hora: "",
-    mecanico: "",
-    data: "",
-    servico: "",
+    mecanicoUsername: "",
   })
 
   // Carregar agendamentos da API
@@ -97,10 +91,36 @@ export default function SchedulingScreen() {
     }
   }
 
+  // Carregar mecânicos da API
+  const loadMecanicos = async () => {
+    try {
+      setLoadingMecanicos(true)
+      const data = await getMecanicos()
+      setMecanicos(data)
+    } catch (err) {
+      console.error("Erro ao carregar mecânicos:", err)
+      // Não exibir erro para mecânicos, apenas usar lista vazia
+      setMecanicos([])
+    } finally {
+      setLoadingMecanicos(false)
+    }
+  }
+
   // Carregar dados na inicialização
   React.useEffect(() => {
     loadAgendamentos()
+    loadMecanicos()
   }, [])
+
+  // Atualizar mecânico padrão quando mecânicos são carregados
+  React.useEffect(() => {
+    if (mecanicos.length > 0 && !createForm.mecanicoUsername) {
+      setCreateForm(prev => ({
+        ...prev,
+        mecanicoUsername: mecanicos[0].username
+      }))
+    }
+  }, [mecanicos, createForm.mecanicoUsername])
 
   // Filtros e busca
   const filteredAppointments = React.useMemo(() => {
@@ -109,7 +129,8 @@ export default function SchedulingScreen() {
     // Filtro por mecânico
     if (selectedMechanic !== "todos") {
       filtered = filtered.filter((appointment) => 
-        appointment.mecanico?.toLowerCase() === selectedMechanic.toLowerCase()
+        appointment.mecanico?.toLowerCase() === selectedMechanic.toLowerCase() ||
+        (appointment as any).mecanicoUsername?.toLowerCase() === selectedMechanic.toLowerCase()
       )
     }
 
@@ -140,19 +161,27 @@ export default function SchedulingScreen() {
   }
 
   const handleEdit = (appointment: Agendamento) => {
+    console.log("=== handleEdit CHAMADO ===");
+    console.log("appointment recebido:", appointment);
+    
     setSelectedAppointment(appointment)
+    
+    // Tentar obter o mecânico do agendamento, senão usar padrão
+    const mecanicoFromAppointment = appointment.mecanicoUsername || appointment.mecanico || getDefaultMechanic();
+    console.log("Mecânico detectado:", mecanicoFromAppointment);
+    
     setEditForm({
       dataAgendada: appointment.dataAgendada,
-      status: appointment.status,
       observacoes: appointment.observacoes || "",
-      cliente: appointment.cliente || "",
-      automovel: appointment.automovel || "",
-      telefone: appointment.telefone || "",
-      hora: appointment.hora || "",
-      mecanico: appointment.mecanico || "",
-      data: appointment.data || "",
-      servico: appointment.servico || "",
+      mecanicoUsername: mecanicoFromAppointment,
     })
+    
+    console.log("editForm configurado:", {
+      dataAgendada: appointment.dataAgendada,
+      observacoes: appointment.observacoes || "",
+      mecanicoUsername: mecanicoFromAppointment,
+    });
+    
     setIsEditDialogOpen(true)
   }
 
@@ -166,50 +195,98 @@ export default function SchedulingScreen() {
   }
 
   const handleSaveEdit = async () => {
+    console.log("=== INÍCIO handleSaveEdit ===");
+    console.log("selectedAppointment:", selectedAppointment);
+    console.log("editForm:", editForm);
+    
+    setIsUpdating(true);
+    setError(null);
+    
     try {
-      if (!selectedAppointment?.id) return
+      // Usar numeroOrdem se id não estiver disponível
+      const appointmentId = selectedAppointment?.id || selectedAppointment?.numeroOrdem
       
-      const agendamentoData: AgendamentoInput = {
-        dataAgendada: editForm.dataAgendada,
-        status: editForm.status,
-        observacoes: editForm.observacoes,
+      if (!appointmentId) {
+        console.log("ERRO: ID do agendamento não encontrado (tentou id e numeroOrdem)");
+        setError("ID do agendamento não encontrado");
+        return
       }
       
-      await updateAgendamento(selectedAppointment.id, agendamentoData)
+      // Validar campos obrigatórios
+      if (!editForm.dataAgendada) {
+        setError("Data e hora são obrigatórios");
+        return;
+      }
+      
+      if (!editForm.mecanicoUsername) {
+        setError("Mecânico é obrigatório");
+        return;
+      }
+      
+      console.log("Preparando dados para atualização...");
+      const agendamentoData: AgendamentoInput = {
+        dataAgendada: editForm.dataAgendada,
+        observacoes: editForm.observacoes,
+        mecanicoUsername: editForm.mecanicoUsername,
+      }
+      
+      console.log("Dados a serem enviados:", agendamentoData);
+      console.log("ID do agendamento:", appointmentId);
+      
+      await updateAgendamento(appointmentId, agendamentoData)
+      console.log("Agendamento atualizado com sucesso!");
+      
       setIsEditDialogOpen(false)
       await loadAgendamentos() // Recarregar lista
+      console.log("=== FIM handleSaveEdit - SUCESSO ===");
     } catch (err) {
+      console.error("=== ERRO handleSaveEdit ===", err);
       setError(err instanceof Error ? err.message : "Erro ao salvar agendamento")
+    } finally {
+      setIsUpdating(false);
     }
   }
 
   const handleCreateAppointment = async () => {
+    console.log("=== CLIQUE NO BOTÃO DETECTADO ===");
+    console.log("createForm atual:", createForm);
+    
     try {
-      const agendamentoData: AgendamentoInput = {
-        dataAgendada: createForm.dataAgendada,
-        status: createForm.status,
-        observacoes: createForm.observacoes,
+      setError(null); // Limpar erro anterior
+      
+      // Validação básica
+      if (!createForm.dataAgendada) {
+        console.log("Erro: Data não preenchida");
+        setError("Data e hora são obrigatórios.");
+        return;
       }
       
-      await createAgendamento(agendamentoData)
-      setIsCreateDialogOpen(false)
-      await loadAgendamentos() // Recarregar lista
+      const agendamentoData: AgendamentoInput = {
+        dataAgendada: createForm.dataAgendada,
+        observacoes: createForm.observacoes || "",
+        mecanicoUsername: createForm.mecanicoUsername,
+      }
+      
+      console.log("=== CHAMANDO SERVIÇO ===");
+      
+      const resultado = await createAgendamento(agendamentoData);
+      
+      console.log("=== SUCESSO - RESULTADO ===", resultado);
+      
+      setIsCreateDialogOpen(false);
+      await loadAgendamentos();
       
       // Limpar formulário
       setCreateForm({
         dataAgendada: "",
-        status: "AGENDADO",
         observacoes: "",
-        cliente: "",
-        automovel: "",
-        telefone: "",
-        hora: "",
-        mecanico: "",
-        data: "",
-        servico: "",
-      })
+        mecanicoUsername: getDefaultMechanic(),
+      });
+      
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao criar agendamento")
+      console.error("=== ERRO CAPTURADO ===", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+      setError(errorMessage);
     }
   }
 
@@ -267,7 +344,8 @@ export default function SchedulingScreen() {
     )
   }
 
-  if (error) {
+  // Mostrar erro apenas se for erro de carregamento inicial, não de operações
+  if (error && loading === false && appointments.length === 0) {
     return (
       <div className="flex-1 p-4 sm:p-6 min-h-screen">
         <div className="max-w-7xl mx-auto">
@@ -285,12 +363,29 @@ export default function SchedulingScreen() {
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900 mb-6">Agendamentos</h1>
 
+          {/* Error Display */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="text-red-600 text-sm">{error}</div>
+                </div>
+                <button
+                  onClick={() => setError(null)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Filters and Actions */}
           <div className="flex flex-col lg:flex-row gap-4 mb-6">
             {/* Mechanic Filter */}
             <div className="flex flex-col gap-2">
               <Label className="text-sm font-medium text-blue-600">Agendamentos por mecânico:</Label>
-              <Select value={selectedMechanic} onValueChange={setSelectedMechanic}>
+              <Select value={selectedMechanic} onValueChange={setSelectedMechanic} disabled={loadingMecanicos}>
                 <SelectTrigger className="w-full lg:w-64">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-gray-500" />
@@ -299,9 +394,11 @@ export default function SchedulingScreen() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="gustavo">Gustavo</SelectItem>
-                  <SelectItem value="isabely">Isabely</SelectItem>
-                  <SelectItem value="joão">João</SelectItem>
+                  {mecanicos.map((mecanico) => (
+                    <SelectItem key={mecanico.username} value={mecanico.username}>
+                      {mecanico.username}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -324,26 +421,35 @@ export default function SchedulingScreen() {
                         <Input 
                           id="new-data" 
                           type="datetime-local"
+                          min={new Date().toISOString().slice(0, 16)}
                           value={createForm.dataAgendada}
                           onChange={(e) => setCreateForm({ ...createForm, dataAgendada: e.target.value })}
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="new-status">Status</Label>
+                        <Label htmlFor="new-mecanico">Mecânico</Label>
                         <Select
-                          value={createForm.status}
-                          onValueChange={(value: "AGENDADO" | "CONFIRMADO" | "CANCELADO" | "CONCLUIDO") => 
-                            setCreateForm({ ...createForm, status: value })
+                          value={createForm.mecanicoUsername}
+                          onValueChange={(value: string) => 
+                            setCreateForm({ ...createForm, mecanicoUsername: value })
                           }
+                          disabled={loadingMecanicos}
                         >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="AGENDADO">Agendado</SelectItem>
-                            <SelectItem value="CONFIRMADO">Confirmado</SelectItem>
-                            <SelectItem value="CANCELADO">Cancelado</SelectItem>
-                            <SelectItem value="CONCLUIDO">Concluído</SelectItem>
+                            {mecanicos.length > 0 ? (
+                              mecanicos.map((mecanico) => (
+                                <SelectItem key={mecanico.username} value={mecanico.username}>
+                                  {mecanico.username}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="" disabled>
+                                {loadingMecanicos ? "Carregando..." : "Nenhum mecânico encontrado"}
+                              </SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -652,26 +758,35 @@ export default function SchedulingScreen() {
                   <Input
                     id="edit-data"
                     type="datetime-local"
+                    min={new Date().toISOString().slice(0, 16)}
                     value={editForm.dataAgendada}
                     onChange={(e) => setEditForm({ ...editForm, dataAgendada: e.target.value })}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-status">Status</Label>
+                  <Label htmlFor="edit-mecanico">Mecânico</Label>
                   <Select
-                    value={editForm.status}
-                    onValueChange={(value: "AGENDADO" | "CONFIRMADO" | "CANCELADO" | "CONCLUIDO") => 
-                      setEditForm({ ...editForm, status: value })
+                    value={editForm.mecanicoUsername}
+                    onValueChange={(value: string) => 
+                      setEditForm({ ...editForm, mecanicoUsername: value })
                     }
+                    disabled={loadingMecanicos}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="AGENDADO">Agendado</SelectItem>
-                      <SelectItem value="CONFIRMADO">Confirmado</SelectItem>
-                      <SelectItem value="CANCELADO">Cancelado</SelectItem>
-                      <SelectItem value="CONCLUIDO">Concluído</SelectItem>
+                      {mecanicos.length > 0 ? (
+                        mecanicos.map((mecanico) => (
+                          <SelectItem key={mecanico.username} value={mecanico.username}>
+                            {mecanico.username}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="" disabled>
+                          {loadingMecanicos ? "Carregando..." : "Nenhum mecânico encontrado"}
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -689,7 +804,9 @@ export default function SchedulingScreen() {
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleSaveEdit}>Salvar Alterações</Button>
+              <Button onClick={handleSaveEdit} disabled={isUpdating}>
+                {isUpdating ? "Salvando..." : "Salvar Alterações"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -282,3 +282,47 @@ export async function resetUsuarioPassword(id: number, newPassword: string): Pro
     throw new Error("Erro ao resetar senha. Tente novamente.");
   }
 }
+
+// Buscar apenas usuários mecânicos
+export async function getMecanicos(): Promise<Usuario[]> {
+  try {
+    console.log("Fazendo requisição para buscar mecânicos:", API_URL);
+    const response = await apiClient.get(`${API_URL}?_t=${Date.now()}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+    
+    console.log("Resposta recebida para mecânicos:", response.status);
+    console.log("Dados da resposta:", response.data);
+    
+    // A API retorna um array simples, filtrar apenas mecânicos ativos
+    const usuarios: Usuario[] = Array.isArray(response.data) ? response.data : [];
+    
+    // Filtrar apenas usuários com role MECANICO e status ATIVO
+    const mecanicos = usuarios.filter(user => 
+      user.role === 'MECANICO' && user.status === 'ATIVO'
+    );
+    
+    console.log("Mecânicos filtrados:", mecanicos);
+    
+    return mecanicos;
+  } catch (error: any) {
+    console.error("Error fetching mecânicos:", error);
+    console.error("Error details:", {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      url: error.config?.url
+    });
+    
+    if (error.response && error.response.status === 404) {
+      // Retornar array vazio se não encontrar usuários
+      return [];
+    }
+    
+    throw new Error("Erro ao buscar mecânicos. Tente novamente.");
+  }
+}
