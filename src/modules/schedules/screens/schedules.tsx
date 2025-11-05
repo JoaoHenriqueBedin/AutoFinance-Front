@@ -2,12 +2,11 @@
 "use client"
 
 import * as React from "react"
-import { Eye, Edit, Trash2, Search, ChevronLeft, ChevronRight, User } from "lucide-react"
+import { Eye, Edit, Search, ChevronLeft, ChevronRight, User } from "lucide-react"
 import { 
   getAgendamentos, 
   createAgendamento, 
-  updateAgendamento, 
-  deleteAgendamento,
+  updateAgendamento,
   type Agendamento,
   type AgendamentoInput,
   type AgendamentoForm
@@ -26,17 +25,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -62,6 +50,8 @@ export default function SchedulingScreen() {
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
   const [selectedMechanic, setSelectedMechanic] = React.useState("todos")
+  const [selectedStatus, setSelectedStatus] = React.useState("todos")
+  const [selectedDate, setSelectedDate] = React.useState("")
   const [searchTerm, setSearchTerm] = React.useState("")
   const [currentPage, setCurrentPage] = React.useState(1)
   const [isUpdating, setIsUpdating] = React.useState(false)
@@ -69,6 +59,7 @@ export default function SchedulingScreen() {
     dataAgendada: "",
     observacoes: "",
     mecanicoUsername: "",
+    status: "AGENDADO",
   })
   const [createForm, setCreateForm] = React.useState<AgendamentoForm>({
     id: 0,
@@ -82,7 +73,9 @@ export default function SchedulingScreen() {
     try {
       setLoading(true)
       setError(null)
+      console.log("=== CARREGANDO AGENDAMENTOS ===", new Date().toISOString());
       const data = await getAgendamentos()
+      console.log("=== AGENDAMENTOS CARREGADOS ===", data.length, "registros");
       setAppointments(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar agendamentos")
@@ -134,6 +127,21 @@ export default function SchedulingScreen() {
       )
     }
 
+    // Filtro por status
+    if (selectedStatus !== "todos") {
+      filtered = filtered.filter((appointment) => 
+        appointment.status === selectedStatus
+      )
+    }
+
+    // Filtro por data
+    if (selectedDate) {
+      filtered = filtered.filter((appointment) => {
+        const appointmentDate = new Date(appointment.dataAgendada).toISOString().split('T')[0]
+        return appointmentDate === selectedDate
+      })
+    }
+
     // Filtro por busca
     if (searchTerm) {
       filtered = filtered.filter(
@@ -147,7 +155,7 @@ export default function SchedulingScreen() {
     }
 
     return filtered
-  }, [appointments, selectedMechanic, searchTerm])
+  }, [appointments, selectedMechanic, selectedStatus, selectedDate, searchTerm])
 
   // Paginação
   const totalPages = Math.ceil(filteredAppointments.length / ITEMS_PER_PAGE)
@@ -170,28 +178,29 @@ export default function SchedulingScreen() {
     const mecanicoFromAppointment = appointment.mecanicoUsername || appointment.mecanico || getDefaultMechanic();
     console.log("Mecânico detectado:", mecanicoFromAppointment);
     
+    // Mapear status para os valores aceitos
+    let statusMapeado: 'AGENDADO' | 'CONCLUIDO' | 'INATIVO' = 'AGENDADO';
+    if (appointment.status === 'CONCLUIDO') {
+      statusMapeado = 'CONCLUIDO';
+    } else if (appointment.status === 'CANCELADO') {
+      statusMapeado = 'INATIVO';
+    }
+    
     setEditForm({
       dataAgendada: appointment.dataAgendada,
       observacoes: appointment.observacoes || "",
       mecanicoUsername: mecanicoFromAppointment,
+      status: statusMapeado,
     })
     
     console.log("editForm configurado:", {
       dataAgendada: appointment.dataAgendada,
       observacoes: appointment.observacoes || "",
       mecanicoUsername: mecanicoFromAppointment,
+      status: statusMapeado,
     });
     
     setIsEditDialogOpen(true)
-  }
-
-  const handleDelete = async (appointmentId: number) => {
-    try {
-      await deleteAgendamento(appointmentId)
-      await loadAgendamentos() // Recarregar lista
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao excluir agendamento")
-    }
   }
 
   const handleSaveEdit = async () => {
@@ -228,6 +237,7 @@ export default function SchedulingScreen() {
         dataAgendada: editForm.dataAgendada,
         observacoes: editForm.observacoes,
         mecanicoUsername: editForm.mecanicoUsername,
+        status: editForm.status,
       }
       
       console.log("Dados a serem enviados:", agendamentoData);
@@ -237,6 +247,10 @@ export default function SchedulingScreen() {
       console.log("Agendamento atualizado com sucesso!");
       
       setIsEditDialogOpen(false)
+      
+      // Pequeno delay antes de recarregar para garantir que o backend processou
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
       await loadAgendamentos() // Recarregar lista
       console.log("=== FIM handleSaveEdit - SUCESSO ===");
     } catch (err) {
@@ -308,27 +322,6 @@ export default function SchedulingScreen() {
       >
         <Edit className="h-4 w-4" />
       </Button>
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:bg-red-50">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir o agendamento de {appointment.cliente}? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleDelete(appointment.id!)} className="bg-red-600 hover:bg-red-700">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 
@@ -363,30 +356,13 @@ export default function SchedulingScreen() {
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900 mb-6">Agendamentos</h1>
 
-          {/* Error Display */}
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="text-red-600 text-sm">{error}</div>
-                </div>
-                <button
-                  onClick={() => setError(null)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Filters and Actions */}
           <div className="flex flex-col lg:flex-row gap-4 mb-6">
             {/* Mechanic Filter */}
             <div className="flex flex-col gap-2">
-              <Label className="text-sm font-medium text-blue-600">Agendamentos por mecânico:</Label>
+              <Label className="text-sm font-medium text-blue-600">Por mecânico:</Label>
               <Select value={selectedMechanic} onValueChange={setSelectedMechanic} disabled={loadingMecanicos}>
-                <SelectTrigger className="w-full lg:w-64">
+                <SelectTrigger className="w-full lg:w-48">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-gray-500" />
                     <SelectValue />
@@ -403,8 +379,52 @@ export default function SchedulingScreen() {
               </Select>
             </div>
 
+            {/* Status Filter */}
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm font-medium text-blue-600">Por status:</Label>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-full lg:w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="AGENDADO">AGENDADO</SelectItem>
+                  <SelectItem value="CONCLUIDO">CONCLUIDO</SelectItem>
+                  <SelectItem value="INATIVO">INATIVO</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date Filter */}
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm font-medium text-blue-600">Por data:</Label>
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full lg:w-48"
+              />
+            </div>
+
+            {/* Clear Filters Button */}
+            {(selectedMechanic !== "todos" || selectedStatus !== "todos" || selectedDate) && (
+              <div className="flex items-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedMechanic("todos")
+                    setSelectedStatus("todos")
+                    setSelectedDate("")
+                  }}
+                  className="h-10"
+                >
+                  Limpar Filtros
+                </Button>
+              </div>
+            )}
+
             {/* New Appointment Button */}
-            <div className="flex items-end">
+            <div className="flex items-end ml-auto">
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="bg-[#5A6ACF]  hover:bg-[#5A6ACF]  text-white px-8 py-2 h-10">NOVO AGENDAMENTO</Button>
@@ -500,6 +520,7 @@ export default function SchedulingScreen() {
             <TableHeader>
               <TableRow className="bg-purple-100">
                 <TableHead className="text-blue-700 font-medium">Data/Hora</TableHead>
+                <TableHead className="text-blue-700 font-medium">Mecânico</TableHead>
                 <TableHead className="text-blue-700 font-medium">Status</TableHead>
                 <TableHead className="text-blue-700 font-medium">Observações</TableHead>
                 <TableHead className="text-blue-700 font-medium w-32">Ações</TableHead>
@@ -508,7 +529,7 @@ export default function SchedulingScreen() {
             <TableBody>
               {currentAppointments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                     {filteredAppointments.length === 0 && appointments.length > 0
                       ? "Nenhum agendamento encontrado com os filtros aplicados"
                       : "Nenhum agendamento cadastrado"}
@@ -519,6 +540,12 @@ export default function SchedulingScreen() {
                   <TableRow key={appointment.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">
                       {new Date(appointment.dataAgendada).toLocaleString('pt-BR')}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-400" />
+                        <span>{appointment.mecanicoUsername || appointment.mecanico || "-"}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -560,6 +587,14 @@ export default function SchedulingScreen() {
                     </p>
                   </div>
                   {renderActionButtons(appointment)}
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500">Mecânico</p>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-400" />
+                    <p className="text-gray-800">{appointment.mecanicoUsername || appointment.mecanico || "-"}</p>
+                  </div>
                 </div>
 
                 <div>
@@ -720,6 +755,13 @@ export default function SchedulingScreen() {
                   <p className="text-sm">{new Date(selectedAppointment.dataAgendada).toLocaleString('pt-BR')}</p>
                 </div>
                 <div>
+                  <Label className="text-sm font-medium text-gray-500">Mecânico</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <User className="h-4 w-4 text-gray-400" />
+                    <p className="text-sm">{selectedAppointment.mecanicoUsername || selectedAppointment.mecanico || "-"}</p>
+                  </div>
+                </div>
+                <div>
                   <Label className="text-sm font-medium text-gray-500">Status</Label>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     selectedAppointment.status === 'AGENDADO' ? 'bg-yellow-100 text-yellow-800' :
@@ -790,6 +832,24 @@ export default function SchedulingScreen() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-status">Situação</Label>
+                <Select
+                  value={editForm.status}
+                  onValueChange={(value: 'AGENDADO' | 'CONCLUIDO' | 'INATIVO') => 
+                    setEditForm({ ...editForm, status: value })
+                  }
+                >
+                  <SelectTrigger id="edit-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AGENDADO">AGENDADO</SelectItem>
+                    <SelectItem value="CONCLUIDO">CONCLUIDO</SelectItem>
+                    <SelectItem value="INATIVO">INATIVO</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-observacoes">Observações</Label>

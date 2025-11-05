@@ -30,6 +30,7 @@ export interface AgendamentoInput {
   dataAgendada: string;
   observacoes?: string;
   mecanicoUsername: string;
+  status?: 'AGENDADO' | 'CONCLUIDO' | 'INATIVO';
 }
 
 // Interface para o formulário de agendamento (inclui campos de display)
@@ -38,6 +39,7 @@ export interface AgendamentoForm {
   dataAgendada: string;
   observacoes?: string;
   mecanicoUsername: string;
+  status?: 'AGENDADO' | 'CONCLUIDO' | 'INATIVO';
 }
 
 // Buscar todos os agendamentos
@@ -156,7 +158,13 @@ export async function updateAgendamento(id: number, agendamentoData: Agendamento
     console.log(`Atualizando agendamento com ID: ${id}`);
     console.log('Dados a serem enviados:', agendamentoData);
     
-    const response = await apiClient.put(`${API_URL}/atualizar/${id}`, agendamentoData);
+    const response = await apiClient.put(`${API_URL}/atualizar/${id}`, agendamentoData, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
     console.log('Resposta da API:', response.data);
     
     // Mostrar toast de sucesso
@@ -167,6 +175,7 @@ export async function updateAgendamento(id: number, agendamentoData: Agendamento
     console.error("Error updating agendamento:", error);
     console.error("URL tentada:", `${API_URL}/${id}/atualizar`);
     console.error("Dados enviados:", agendamentoData);
+    
     if (error.response && error.response.status === 401) {
       const errorMsg = "Acesso não autorizado. Faça login novamente.";
       toast.error(errorMsg);
@@ -178,13 +187,23 @@ export async function updateAgendamento(id: number, agendamentoData: Agendamento
       throw new Error(errorMsg);
     }
     if (error.response && error.response.status === 400) {
-      const errorMessage = error.response.data?.message || error.response.data?.error || "";
+      // Capturar erro específico da API
+      const errorData = error.response.data;
+      const errorMessage = errorData?.erro || errorData?.error || errorData?.message || "";
+      
+      if (errorMessage) {
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+      
+      // Mensagens específicas antigas (mantidas como fallback)
       if (errorMessage.toLowerCase().includes("conflito") || errorMessage.toLowerCase().includes("horário")) {
         const errorMsg = "Já existe um agendamento para este horário.";
         toast.error(errorMsg);
         throw new Error(errorMsg);
       }
     }
+    
     const errorMsg = "Erro ao atualizar agendamento. Tente novamente.";
     toast.error(errorMsg);
     throw new Error(errorMsg);
