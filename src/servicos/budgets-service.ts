@@ -11,7 +11,7 @@ export interface Orcamento {
   servicoNome: string;
   mecanicoUsername: string;
   valorAjustado: number;
-  status: string;
+  status: 'ATIVO' | 'INATIVO' | 'GERADO';
   dataCriacao: string;
 }
 
@@ -51,7 +51,7 @@ export interface OrcamentoInput {
   veiculo: { placa: string };
   servico: { nome: string };
   valorAjustado: number;
-  status: string;
+  status: 'ATIVO' | 'INATIVO' | 'GERADO';
 }
 
 // Buscar todos os orçamentos

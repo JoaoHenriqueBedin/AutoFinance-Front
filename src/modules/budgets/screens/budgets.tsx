@@ -50,8 +50,7 @@ import { ErrorDisplay } from "@/components/ui/error-display";
 import { 
   getOrcamentos, 
   createOrcamento, 
-  updateOrcamento, 
-  deleteOrcamento,
+  updateOrcamento,
   Orcamento,
   OrcamentoInput 
 } from "@/servicos/budgets-service";
@@ -78,6 +77,7 @@ export default function BudgetScreen() {
   
   // Estados para filtros e paginação
   const [sortBy, setSortBy] = React.useState("latest");
+  const [selectedStatus, setSelectedStatus] = React.useState("todos");
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   
@@ -90,7 +90,13 @@ export default function BudgetScreen() {
   const [loadingServices, setLoadingServices] = React.useState(false);
 
   // Estados para formulários
-  const [createForm, setCreateForm] = React.useState({
+  const [createForm, setCreateForm] = React.useState<{
+    clienteCpfCnpj: string;
+    veiculoPlaca: string;
+    servicoId: string;
+    valorAjustado: string;
+    status: 'ATIVO' | 'INATIVO' | 'GERADO';
+  }>({
     clienteCpfCnpj: "",
     veiculoPlaca: "",
     servicoId: "",
@@ -98,7 +104,13 @@ export default function BudgetScreen() {
     status: "ATIVO",
   });
   
-  const [editForm, setEditForm] = React.useState({
+  const [editForm, setEditForm] = React.useState<{
+    cpfCnpj: string;
+    placa: string;
+    nomeServico: string;
+    valorAjustado: string;
+    status: 'ATIVO' | 'INATIVO' | 'GERADO';
+  }>({
     cpfCnpj: "",
     placa: "",
     nomeServico: "",
@@ -210,12 +222,28 @@ export default function BudgetScreen() {
 
   const handleDelete = async (numeroOrcamento: number) => {
     try {
-      await deleteOrcamento(numeroOrcamento);
+      // Buscar o orçamento atual
+      const budget = budgets.find(b => b.numeroOrcamento === numeroOrcamento);
+      if (!budget) {
+        toast.error("Orçamento não encontrado");
+        return;
+      }
+
+      // Atualizar o status para INATIVO
+      const orcamentoData: OrcamentoInput = {
+        cliente: { cpfCnpj: budget.cpfCnpj },
+        veiculo: { placa: budget.veiculoPlaca },
+        servico: { nome: budget.servicoNome },
+        valorAjustado: budget.valorAjustado,
+        status: 'INATIVO',
+      };
+
+      await updateOrcamento(numeroOrcamento, orcamentoData);
       await loadBudgets(); // Recarregar a lista
-      toast.success("Orçamento excluído com sucesso!");
+      toast.success("Orçamento marcado como inativo com sucesso!");
     } catch (err: any) {
-      console.error("Erro ao excluir orçamento:", err);
-      toast.error(err.message || "Erro ao excluir orçamento");
+      console.error("Erro ao inativar orçamento:", err);
+      toast.error(err.message || "Erro ao inativar orçamento");
     }
   };
 
@@ -299,6 +327,11 @@ export default function BudgetScreen() {
   const filteredAndSortedBudgets = React.useMemo(() => {
     let filtered = [...budgets];
 
+    // Filtro por status
+    if (selectedStatus !== "todos") {
+      filtered = filtered.filter((budget) => budget.status === selectedStatus);
+    }
+
     // Filtro por busca
     if (searchTerm) {
       filtered = filtered.filter(
@@ -327,7 +360,7 @@ export default function BudgetScreen() {
     });
 
     return sorted;
-  }, [budgets, searchTerm, sortBy]);
+  }, [budgets, selectedStatus, searchTerm, sortBy]);
 
   // Paginação
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedBudgets.length / ITEMS_PER_PAGE));
@@ -369,10 +402,10 @@ export default function BudgetScreen() {
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogTitle>Inativar Orçamento</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o orçamento #{budget.numeroOrcamento} do cliente {budget.cpfCnpj}?
-              Esta ação não pode ser desfeita.
+              Tem certeza que deseja inativar o orçamento {budget.numeroOrcamento} do cliente {budget.cpfCnpj}?
+              O orçamento será marcado como INATIVO.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -381,7 +414,7 @@ export default function BudgetScreen() {
               onClick={() => handleDelete(budget.numeroOrcamento)}
               className="bg-red-600 hover:bg-red-700"
             >
-              Excluir
+              Inativar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -548,7 +581,7 @@ export default function BudgetScreen() {
                     <Label htmlFor="new-status">Status</Label>
                     <Select
                       value={createForm.status}
-                      onValueChange={(value) =>
+                      onValueChange={(value: 'ATIVO' | 'INATIVO' | 'GERADO') =>
                         setCreateForm({ ...createForm, status: value })
                       }
                     >
@@ -558,8 +591,7 @@ export default function BudgetScreen() {
                       <SelectContent>
                         <SelectItem value="ATIVO">ATIVO</SelectItem>
                         <SelectItem value="INATIVO">INATIVO</SelectItem>
-                        <SelectItem value="CONCLUIDO">CONCLUÍDO</SelectItem>
-                        <SelectItem value="CANCELADO">CANCELADO</SelectItem>
+                        <SelectItem value="GERADO">GERADO</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -610,19 +642,50 @@ export default function BudgetScreen() {
             <span className="text-sm text-gray-600">
               Listagem de orçamentos:
             </span>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-sm text-gray-600">Ordenar por:</span>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="latest">Últimas adicionadas</SelectItem>
-                  <SelectItem value="oldest">Mais antigas</SelectItem>
-                  <SelectItem value="client">Cliente A-Z</SelectItem>
-                  <SelectItem value="value">Maior valor</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+              {/* Filtro por Status */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="text-sm text-gray-600">Filtrar por:</span>
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="w-full sm:w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="ATIVO">ATIVO</SelectItem>
+                    <SelectItem value="INATIVO">INATIVO</SelectItem>
+                    <SelectItem value="GERADO">GERADO</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Botão Limpar Filtro */}
+              {selectedStatus !== "todos" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedStatus("todos")}
+                  className="h-10"
+                >
+                  Limpar Filtro
+                </Button>
+              )}
+              
+              {/* Ordenação */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="text-sm text-gray-600">Ordenar por:</span>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="latest">Últimas adicionadas</SelectItem>
+                    <SelectItem value="oldest">Mais antigas</SelectItem>
+                    <SelectItem value="client">Cliente A-Z</SelectItem>
+                    <SelectItem value="value">Maior valor</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </div>
@@ -655,7 +718,7 @@ export default function BudgetScreen() {
                   currentBudgets.map((budget) => (
                     <TableRow key={budget.numeroOrcamento}>
                       <TableCell className="font-medium text-blue-600">
-                        #{budget.numeroOrcamento}
+                        {budget.numeroOrcamento}
                       </TableCell>
                       <TableCell className="font-medium">
                         {budget.cpfCnpj}
@@ -702,7 +765,7 @@ export default function BudgetScreen() {
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-grow">
-                      <p className="text-sm text-gray-500">Orçamento #{budget.numeroOrcamento}</p>
+                      <p className="text-sm text-gray-500">Orçamento {budget.numeroOrcamento}</p>
                       <p className="text-sm text-gray-500 mt-1">Cliente (CPF/CNPJ)</p>
                       <p className="font-medium text-gray-900">{budget.cpfCnpj}</p>
                     </div>
@@ -929,7 +992,7 @@ export default function BudgetScreen() {
                 <Label htmlFor="edit-status">Status</Label>
                 <Select
                   value={editForm.status}
-                  onValueChange={(value) =>
+                  onValueChange={(value: 'ATIVO' | 'INATIVO' | 'GERADO') =>
                     setEditForm({ ...editForm, status: value })
                   }
                 >
@@ -939,8 +1002,7 @@ export default function BudgetScreen() {
                   <SelectContent>
                     <SelectItem value="ATIVO">ATIVO</SelectItem>
                     <SelectItem value="INATIVO">INATIVO</SelectItem>
-                    <SelectItem value="CONCLUIDO">CONCLUÍDO</SelectItem>
-                    <SelectItem value="CANCELADO">CANCELADO</SelectItem>
+                    <SelectItem value="GERADO">GERADO</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
