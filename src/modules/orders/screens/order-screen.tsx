@@ -75,6 +75,8 @@ export default function ServiceOrdersScreen() {
   const [currentPage, setCurrentPage] = React.useState(1)
   const [itemsPerPage, setItemsPerPage] = React.useState(5)
   const [searchTerm, setSearchTerm] = React.useState("")
+  const [filterMecanico, setFilterMecanico] = React.useState("all")
+  const [filterStatus, setFilterStatus] = React.useState("all")
   
   // Estado para formulário de criação
   const [createForm, setCreateForm] = React.useState({
@@ -212,6 +214,16 @@ export default function ServiceOrdersScreen() {
       );
     }
     
+    // Filtrar por mecânico
+    if (filterMecanico !== "all") {
+      filtered = filtered.filter(order => order.mecanicoUsername === filterMecanico);
+    }
+    
+    // Filtrar por status
+    if (filterStatus !== "all") {
+      filtered = filtered.filter(order => order.status === filterStatus);
+    }
+    
     // Depois ordena
     const sorted = filtered.sort((a, b) => {
       switch (sortBy) {
@@ -230,7 +242,26 @@ export default function ServiceOrdersScreen() {
       }
     })
     return sorted
-  }, [orders, sortBy, searchTerm, clientes]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [orders, sortBy, searchTerm, filterMecanico, filterStatus, clientes]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Calcular totalizadores por status
+  const statusCounts = React.useMemo(() => {
+    const counts = {
+      ATIVA: 0,
+      INATIVA: 0,
+      EM_ANDAMENTO: 0,
+      AGUARDANDO_MATERIAL: 0,
+      FINALIZADA: 0,
+    };
+    
+    orders.forEach(order => {
+      if (order.status in counts) {
+        counts[order.status as keyof typeof counts]++;
+      }
+    });
+    
+    return counts;
+  }, [orders]);
 
   // Paginação
   const totalPages = Math.ceil(sortedOrders.length / itemsPerPage)
@@ -459,15 +490,13 @@ export default function ServiceOrdersScreen() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { color: string; text: string }> = {
-      ATIVO: { color: "bg-green-100 text-green-800", text: "Ativo" },
       ATIVA: { color: "bg-green-100 text-green-800", text: "Ativa" },
+      INATIVA: { color: "bg-gray-100 text-gray-600", text: "Inativa" },
       EM_ANDAMENTO: { color: "bg-blue-100 text-blue-800", text: "Em Andamento" },
-      CONCLUIDO: { color: "bg-gray-100 text-gray-800", text: "Concluído" },
-      CANCELADO: { color: "bg-red-100 text-red-800", text: "Cancelado" },
-      INATIVO: { color: "bg-gray-100 text-gray-600", text: "Inativo" },
-      PENDENTE: { color: "bg-yellow-100 text-yellow-800", text: "Pendente" },
+      AGUARDANDO_MATERIAL: { color: "bg-yellow-100 text-yellow-800", text: "Aguardando Material" },
+      FINALIZADA: { color: "bg-purple-100 text-purple-800", text: "Finalizada" },
     }
-    const config = statusConfig[status] || statusConfig["PENDENTE"]
+    const config = statusConfig[status] || statusConfig["ATIVA"]
     return <Badge className={`${config.color} hover:${config.color}`}>{config.text}</Badge>
   }
 
@@ -520,6 +549,86 @@ export default function ServiceOrdersScreen() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900 mb-4">Ordens de Serviço</h1>
+
+          {/* Status Cards - Totalizadores */}
+          {!loading && !error && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+              <button
+                onClick={() => {
+                  setFilterStatus("all");
+                  setCurrentPage(1);
+                }}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  filterStatus === "all"
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className="text-sm text-gray-600 mb-1">Total</div>
+                <div className="text-2xl font-bold text-gray-900">{orders.length}</div>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setFilterStatus("ATIVA");
+                  setCurrentPage(1);
+                }}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  filterStatus === "ATIVA"
+                    ? "border-green-500 bg-green-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className="text-sm text-gray-600 mb-1">Ativas</div>
+                <div className="text-2xl font-bold text-green-600">{statusCounts.ATIVA}</div>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setFilterStatus("EM_ANDAMENTO");
+                  setCurrentPage(1);
+                }}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  filterStatus === "EM_ANDAMENTO"
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className="text-sm text-gray-600 mb-1">Em Andamento</div>
+                <div className="text-2xl font-bold text-blue-600">{statusCounts.EM_ANDAMENTO}</div>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setFilterStatus("AGUARDANDO_MATERIAL");
+                  setCurrentPage(1);
+                }}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  filterStatus === "AGUARDANDO_MATERIAL"
+                    ? "border-yellow-500 bg-yellow-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className="text-sm text-gray-600 mb-1">Aguardando</div>
+                <div className="text-2xl font-bold text-yellow-600">{statusCounts.AGUARDANDO_MATERIAL}</div>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setFilterStatus("FINALIZADA");
+                  setCurrentPage(1);
+                }}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  filterStatus === "FINALIZADA"
+                    ? "border-purple-500 bg-purple-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className="text-sm text-gray-600 mb-1">Finalizadas</div>
+                <div className="text-2xl font-bold text-purple-600">{statusCounts.FINALIZADA}</div>
+              </button>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -657,11 +766,10 @@ export default function ServiceOrdersScreen() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ATIVA">Ativa</SelectItem>
-                        <SelectItem value="EM_ANDAMENTO">Em andamento</SelectItem>
-                        <SelectItem value="PENDENTE">Pendente</SelectItem>
-                        <SelectItem value="CONCLUIDO">Concluído</SelectItem>
-                        <SelectItem value="CANCELADO">Cancelado</SelectItem>
-                        <SelectItem value="INATIVO">Inativo</SelectItem>
+                        <SelectItem value="INATIVA">Inativa</SelectItem>
+                        <SelectItem value="EM_ANDAMENTO">Em Andamento</SelectItem>
+                        <SelectItem value="AGUARDANDO_MATERIAL">Aguardando Material</SelectItem>
+                        <SelectItem value="FINALIZADA">Finalizada</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -729,21 +837,69 @@ export default function ServiceOrdersScreen() {
             
             {/* Filtros - Layout responsivo melhorado */}
             <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
-              {/* Ordenação */}
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm text-gray-600 whitespace-nowrap">Ordenar por:</span>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full sm:w-48 min-w-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="latest">Mais recentes</SelectItem>
-                    <SelectItem value="oldest">Mais antigas</SelectItem>
-                    <SelectItem value="client">Cliente A-Z</SelectItem>
-                    <SelectItem value="value">Maior valor</SelectItem>
-                    <SelectItem value="status">Status</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Ordenação e Filtro por Mecânico */}
+              <div className="flex flex-col sm:flex-row gap-4 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm text-gray-600 whitespace-nowrap">Ordenar por:</span>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-full sm:w-48 min-w-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="latest">Mais recentes</SelectItem>
+                      <SelectItem value="oldest">Mais antigas</SelectItem>
+                      <SelectItem value="client">Cliente A-Z</SelectItem>
+                      <SelectItem value="value">Maior valor</SelectItem>
+                      <SelectItem value="status">Status</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm text-gray-600 whitespace-nowrap">Mecânico:</span>
+                  <Select 
+                    value={filterMecanico} 
+                    onValueChange={(value) => {
+                      setFilterMecanico(value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-48 min-w-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {mecanicos.map((mecanico) => (
+                        <SelectItem key={mecanico.username} value={mecanico.username}>
+                          {mecanico.username}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm text-gray-600 whitespace-nowrap">Status:</span>
+                  <Select 
+                    value={filterStatus} 
+                    onValueChange={(value) => {
+                      setFilterStatus(value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-48 min-w-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="ATIVA">Ativa</SelectItem>
+                      <SelectItem value="INATIVA">Inativa</SelectItem>
+                      <SelectItem value="EM_ANDAMENTO">Em Andamento</SelectItem>
+                      <SelectItem value="AGUARDANDO_MATERIAL">Aguardando Material</SelectItem>
+                      <SelectItem value="FINALIZADA">Finalizada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               
               {/* Paginação */}
@@ -781,21 +937,25 @@ export default function ServiceOrdersScreen() {
           <div className="text-center py-12 bg-white rounded-lg shadow-sm border">
             <div className="text-gray-400 text-lg mb-2">📋</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {searchTerm ? "Nenhuma ordem encontrada" : "Nenhuma ordem de serviço"}
+              {searchTerm || filterMecanico !== "all" || filterStatus !== "all" ? "Nenhuma ordem encontrada" : "Nenhuma ordem de serviço"}
             </h3>
             <p className="text-gray-500 mb-4">
-              {searchTerm 
-                ? "Tente ajustar os filtros de busca ou limpar o campo de pesquisa."
+              {searchTerm || filterMecanico !== "all" || filterStatus !== "all"
+                ? "Tente ajustar os filtros de busca ou limpar os filtros aplicados."
                 : "Comece criando uma nova ordem de serviço ou a partir de um orçamento aprovado."
               }
             </p>
-            {searchTerm && (
+            {(searchTerm || filterMecanico !== "all" || filterStatus !== "all") && (
               <Button 
                 variant="outline" 
-                onClick={() => setSearchTerm("")}
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilterMecanico("all");
+                  setFilterStatus("all");
+                }}
                 className="mb-2"
               >
-                Limpar busca
+                Limpar filtros
               </Button>
             )}
           </div>
@@ -1113,11 +1273,10 @@ export default function ServiceOrdersScreen() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ATIVA">Ativa</SelectItem>
-                    <SelectItem value="EM_ANDAMENTO">Em andamento</SelectItem>
-                    <SelectItem value="PENDENTE">Pendente</SelectItem>
-                    <SelectItem value="CONCLUIDO">Concluído</SelectItem>
-                    <SelectItem value="CANCELADO">Cancelado</SelectItem>
-                    <SelectItem value="INATIVO">Inativo</SelectItem>
+                    <SelectItem value="INATIVA">Inativa</SelectItem>
+                    <SelectItem value="EM_ANDAMENTO">Em Andamento</SelectItem>
+                    <SelectItem value="AGUARDANDO_MATERIAL">Aguardando Material</SelectItem>
+                    <SelectItem value="FINALIZADA">Finalizada</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

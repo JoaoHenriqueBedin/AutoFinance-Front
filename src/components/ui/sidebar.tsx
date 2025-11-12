@@ -7,7 +7,6 @@ import {
   FileText,
   Users,
   Car,
-  HelpCircle,
   User as UserIcon,
   X,
   DoorOpen,
@@ -89,8 +88,7 @@ export default function Sidebar({ open, onClose, onLinkClick }: SidebarProps) {
 
         <p className="text-xs text-gray-500 mt-6 mb-1">OUTROS</p>
         {[
-          { to: "/users", icon: <UserIcon size={18} />, label: "Usuários", adminOnly: true },
-          { to: "/help", icon: <HelpCircle size={18} />, label: "Ajuda", adminOnly: false }
+          { to: "/users", icon: <UserIcon size={18} />, label: "Usuários", adminOnly: true }
         ].filter(item => !item.adminOnly || userIsAdmin).map(({ to, icon, label }) => (
           <SidebarItem
             key={to}

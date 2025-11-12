@@ -321,8 +321,8 @@ export async function inactivateOrdemServico(id: number): Promise<OrdemServico> 
   try {
     console.log(`Inativando ordem de serviço com ID ${id}`);
     
-    // Usar PUT com payload contendo apenas o status INATIVO
-    const payload = { status: "INATIVO" };
+    // Usar PUT com payload contendo apenas o status INATIVA
+    const payload = { status: "INATIVA" };
     const response = await apiClient.put(`${API_URL}/${id}`, payload);
     
     console.log("Ordem de serviço inativada com sucesso:", response.data);
