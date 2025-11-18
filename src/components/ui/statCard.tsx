@@ -1,5 +1,5 @@
 // src/components/ui/StatCard.tsx
-import React from "react";
+
 
 type StatCardProps = {
   label: string;

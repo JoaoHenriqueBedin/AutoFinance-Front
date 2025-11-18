@@ -1,5 +1,4 @@
 // src/components/ui/RecentServices.tsx
-import React from "react";
 import { Car } from "lucide-react";
 import type { ServicoRecente } from "@/servicos/dashboard-service";
 

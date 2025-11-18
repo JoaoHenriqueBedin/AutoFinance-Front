@@ -380,8 +380,8 @@ export default function LandingPage() {
             </Button>
             <Button 
               size="lg" 
-              variant="outline"
-              className="border-white text-white hover:bg-white hover:text-[#5A6ACF] text-lg px-8 py-3"
+
+              className="border-white text-white hover:bg-white text-lg px-8 py-3"
               onClick={handleLoginClick}
             >
               Realizar Login

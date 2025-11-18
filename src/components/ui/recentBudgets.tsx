@@ -1,5 +1,4 @@
 // src/components/ui/RecentBudgets.tsx
-import React from "react";
 import { FileText } from "lucide-react";
 import type { OrcamentoRecente } from "@/servicos/dashboard-service";
 
