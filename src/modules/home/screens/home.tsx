@@ -3,44 +3,60 @@ import StatCard from "@/components/ui/statCard";
 import { Calendar } from "@/components/ui/calendar";
 import RecentServices from "@/components/ui/recentServices";
 import RecentBudgets from "@/components/ui/recentBudgets";
-import { getAgendamentos } from "@/servicos/schedules-service";
-import { startOfDay, parseISO } from "date-fns";
+import { getDashboard, type Dashboard } from "@/servicos/dashboard-service";
+import { startOfDay } from "date-fns";
 
 export default function Home() {
   const [diasComAgendamento, setDiasComAgendamento] = React.useState<Date[]>([]);
+  const [dashboardData, setDashboardData] = React.useState<Dashboard | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  const stats = [
-    { label: "Clientes", value: 0 },
-    { label: "Ordens em andamento", value: 0 },
-    { label: "Veículos", value: 0 },
-    { label: "Faturamento mensal", value: 0 },
-  ];
-
-  // Carregar agendamentos
+  // Carregar dados do dashboard
   React.useEffect(() => {
-    const loadAgendamentos = async () => {
+    const loadDashboard = async () => {
       try {
-        const data = await getAgendamentos();
+        setLoading(true);
+        const data = await getDashboard();
+        setDashboardData(data);
         
-        // Extrair datas únicas dos agendamentos
-        const datas = data.map((agendamento) => {
-          const date = parseISO(agendamento.dataAgendada);
-          return startOfDay(date);
-        });
+        // Extrair datas do calendário de agendamentos
+        const datas = Object.keys(data.calendarioAgendamentos)
+          .filter(dataStr => data.calendarioAgendamentos[dataStr])
+          .map(dataStr => {
+            // Extrai ano, mês e dia da string ISO (ignora timezone)
+            const [year, month, day] = dataStr.split('T')[0].split('-').map(Number);
+            // Cria uma nova data no timezone local
+            return new Date(year, month - 1, day);
+          });
         
-        // Remover duplicatas usando Set
-        const datasUnicas = Array.from(
-          new Set(datas.map(d => d.getTime()))
-        ).map(time => new Date(time));
-        
-        setDiasComAgendamento(datasUnicas);
+        setDiasComAgendamento(datas);
       } catch (error) {
-        console.error("Erro ao carregar agendamentos:", error);
+        console.error("Erro ao carregar dashboard:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadAgendamentos();
+    loadDashboard();
   }, []);
+
+  const stats = [
+    { label: "Clientes cadastrados", value: dashboardData?.totalClientes ?? 0, isCurrency: false },
+    { label: "Ordens em andamento", value: dashboardData?.ordensEmAndamento ?? 0, isCurrency: false },
+    { label: "Veículos cadastrados", value: dashboardData?.totalVeiculos ?? 0, isCurrency: false },
+    { label: "Faturamento mensal previsto", value: dashboardData?.faturamentoMensal ?? 0, isCurrency: true },
+  ];
+
+  if (loading) {
+    return (
+      <div className="px-4 py-6 space-y-6">
+        <h2 className="text-lg font-semibold text-gray-700">Início</h2>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-500">Carregando dados do dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-6 space-y-6">
@@ -55,7 +71,8 @@ export default function Home() {
               <StatCard 
                 key={stat.label} 
                 label={stat.label} 
-                value={stat.value} 
+                value={stat.value}
+                isCurrency={stat.isCurrency}
               />
             ))}
           </div>
@@ -63,7 +80,14 @@ export default function Home() {
           <div className="w-full h-[360px] flex items-start">
             <Calendar 
               modifiers={{
-                comAgendamento: diasComAgendamento
+                comAgendamento: (date) => {
+                  // Normaliza a data do calendário para comparação
+                  const normalizedDate = startOfDay(date);
+                  // Verifica se alguma data do array corresponde
+                  return diasComAgendamento.some(
+                    agendamento => agendamento.getTime() === normalizedDate.getTime()
+                  );
+                }
               }}
               modifiersClassNames={{
                 comAgendamento: "bg-red-500 text-white hover:bg-red-600 hover:text-white"
@@ -75,9 +99,9 @@ export default function Home() {
         {/* Coluna Direita */}
         <div className="flex flex-col space-y-6 w-full">
         
-          <RecentServices />
+          <RecentServices services={dashboardData?.servicosRecentes ?? []} />
 
-          <RecentBudgets />
+          <RecentBudgets budgets={dashboardData?.orcamentosRecentes ?? []} />
         </div>
       </div>
     </div>

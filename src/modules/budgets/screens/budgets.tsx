@@ -47,6 +47,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loading } from "@/components/ui/loading";
 import { ErrorDisplay } from "@/components/ui/error-display";
+import { formatCpfCnpj } from "@/lib/utils";
 import { 
   getOrcamentos, 
   createOrcamento, 
@@ -404,7 +405,7 @@ export default function BudgetScreen() {
           <AlertDialogHeader>
             <AlertDialogTitle>Inativar Orçamento</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja inativar o orçamento {budget.numeroOrcamento} do cliente {budget.cpfCnpj}?
+              Tem certeza que deseja inativar o orçamento {budget.numeroOrcamento} do cliente {formatCpfCnpj(budget.cpfCnpj)}?
               O orçamento será marcado como INATIVO.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -486,7 +487,7 @@ export default function BudgetScreen() {
                       <SelectContent>
                         {clients.map((client) => (
                           <SelectItem key={client.cpfCnpj} value={client.cpfCnpj}>
-                            {client.nome} - {client.cpfCnpj}
+                            {client.nome} - {formatCpfCnpj(client.cpfCnpj)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -721,7 +722,7 @@ export default function BudgetScreen() {
                         {budget.numeroOrcamento}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {budget.cpfCnpj}
+                        {formatCpfCnpj(budget.cpfCnpj)}
                       </TableCell>
                       <TableCell>{budget.veiculoPlaca}</TableCell>
                       <TableCell>{budget.servicoNome}</TableCell>
@@ -767,7 +768,7 @@ export default function BudgetScreen() {
                     <div className="flex-grow">
                       <p className="text-sm text-gray-500">Orçamento {budget.numeroOrcamento}</p>
                       <p className="text-sm text-gray-500 mt-1">Cliente (CPF/CNPJ)</p>
-                      <p className="font-medium text-gray-900">{budget.cpfCnpj}</p>
+                      <p className="font-medium text-gray-900">{formatCpfCnpj(budget.cpfCnpj)}</p>
                     </div>
                     {renderActionButtons(budget)}
                   </div>
@@ -871,7 +872,7 @@ export default function BudgetScreen() {
                     <Label className="text-sm font-medium text-gray-500">
                       Cliente (CPF/CNPJ)
                     </Label>
-                    <p className="text-sm">{selectedBudget.cpfCnpj}</p>
+                    <p className="text-sm">{formatCpfCnpj(selectedBudget.cpfCnpj)}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

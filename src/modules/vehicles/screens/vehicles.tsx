@@ -36,6 +36,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Loading } from "@/components/ui/loading"
 import { ErrorDisplay } from "@/components/ui/error-display"
+import { formatCpfCnpj } from "@/lib/utils"
 
 const ITEMS_PER_PAGE = 6
 
@@ -526,7 +527,7 @@ export default function VehiclesScreen() {
                       <SelectContent>
                         {clientsList.map((client) => (
                           <SelectItem key={client.cpfCnpj} value={client.cpfCnpj}>
-                            {client.nome}
+                            {client.nome} - {formatCpfCnpj(client.cpfCnpj)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -939,7 +940,7 @@ export default function VehiclesScreen() {
                     </div>
                     <div>
                       <Label className="text-xs font-medium text-gray-500">CPF/CNPJ</Label>
-                      <p className="text-sm font-mono">{selectedVehicle.cliente.cpfCnpj}</p>
+                      <p className="text-sm font-mono">{formatCpfCnpj(selectedVehicle.cliente.cpfCnpj)}</p>
                     </div>
                   </div>
                 </div>
@@ -1023,7 +1024,7 @@ export default function VehiclesScreen() {
                   <SelectContent>
                     {clientsList.map((client) => (
                       <SelectItem key={client.cpfCnpj} value={client.cpfCnpj}>
-                        {client.nome}
+                        {client.nome} - {formatCpfCnpj(client.cpfCnpj)}
                       </SelectItem>
                     ))}
                   </SelectContent>

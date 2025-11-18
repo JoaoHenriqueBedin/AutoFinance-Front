@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Loading } from "@/components/ui/loading"
 import { ErrorDisplay } from "@/components/ui/error-display"
+import { formatCpfCnpj } from "@/lib/utils"
 
 // Importar serviços
 import {
@@ -659,7 +660,7 @@ export default function ServiceOrdersScreen() {
                       <SelectContent>
                         {(clientes || []).map((client) => (
                           <SelectItem key={client.cpfCnpj} value={client.cpfCnpj}>
-                            {client.nome} - {client.cpfCnpj}
+                            {client.nome} - {formatCpfCnpj(client.cpfCnpj)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1100,7 +1101,7 @@ export default function ServiceOrdersScreen() {
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Cliente</Label>
                     <p className="text-sm">{getClienteNome(selectedOrder.clienteCpfCnpj || '')}</p>
-                    <p className="text-xs text-gray-400">{selectedOrder.clienteCpfCnpj}</p>
+                    <p className="text-xs text-gray-400">{formatCpfCnpj(selectedOrder.clienteCpfCnpj || '')}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Veículo</Label>
@@ -1166,7 +1167,7 @@ export default function ServiceOrdersScreen() {
                   <SelectContent>
                     {(clientes || []).map((client) => (
                       <SelectItem key={client.cpfCnpj} value={client.cpfCnpj}>
-                        {client.nome} - {client.cpfCnpj}
+                        {client.nome} - {formatCpfCnpj(client.cpfCnpj)}
                       </SelectItem>
                     ))}
                   </SelectContent>

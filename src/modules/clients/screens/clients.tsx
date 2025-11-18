@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { formatCpfCnpj, formatPhone } from "@/lib/utils"
 
 // Importar serviços e tipos
 import { 
@@ -210,14 +211,7 @@ export default function ClientsScreen() {
     }
   }
 
-  // Função para formatar telefone
-  const formatPhone = (value: string): string => {
-    const cleanValue = value.replace(/\D/g, '')
-    return cleanValue
-      .replace(/(\d{2})(\d)/, '($1) $2')
-      .replace(/(\d{5})(\d)/, '$1-$2')
-      .replace(/(-\d{4})\d+?$/, '$1')
-  }
+
 
   // Função para formatar CEP
   const formatCEP = (value: string): string => {
@@ -994,7 +988,7 @@ export default function ClientsScreen() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-1 text-sm">
                           <Phone className="w-3 h-3 text-gray-400" />
-                          {client.celular}
+                          {formatPhone(client.celular)}
                         </div>
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           <Mail className="w-3 h-3 text-gray-400" />
@@ -1002,7 +996,7 @@ export default function ClientsScreen() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{client.cpfCnpj}</TableCell>
+                    <TableCell className="font-mono text-sm">{formatCpfCnpj(client.cpfCnpj)}</TableCell>
                     <TableCell>
                       <p className="text-sm">{formatDate(client.dataNascimento)}</p>
                     </TableCell>
@@ -1046,7 +1040,7 @@ export default function ClientsScreen() {
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">{client.nome}</p>
-                      <p className="text-sm text-gray-500">{client.cpfCnpj}</p>
+                      <p className="text-sm text-gray-500">{formatCpfCnpj(client.cpfCnpj)}</p>
                     </div>
                   </div>
                   {renderActionButtons(client)}
@@ -1055,7 +1049,7 @@ export default function ClientsScreen() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="w-4 h-4 text-gray-400" />
-                    <span>{client.celular}</span>
+                    <span>{formatPhone(client.celular)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Mail className="w-4 h-4 text-gray-400" />
@@ -1153,7 +1147,7 @@ export default function ClientsScreen() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">CPF/CNPJ</Label>
-                    <p className="text-sm font-mono">{selectedClient.cpfCnpj}</p>
+                    <p className="text-sm font-mono">{formatCpfCnpj(selectedClient.cpfCnpj)}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Data de Nascimento</Label>
@@ -1164,7 +1158,7 @@ export default function ClientsScreen() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Celular</Label>
-                    <p className="text-sm">{selectedClient.celular}</p>
+                    <p className="text-sm">{formatPhone(selectedClient.celular)}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">E-mail</Label>

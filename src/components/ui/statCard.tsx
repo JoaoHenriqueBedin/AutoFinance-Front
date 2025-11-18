@@ -4,9 +4,14 @@ import React from "react";
 type StatCardProps = {
   label: string;
   value: number;
+  isCurrency?: boolean;
 };
 
-export default function StatCard({ label, value }: StatCardProps) {
+export default function StatCard({ label, value, isCurrency = false }: StatCardProps) {
+  const formattedValue = isCurrency
+    ? `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : value;
+
   return (
     <div
       className="
@@ -16,7 +21,7 @@ export default function StatCard({ label, value }: StatCardProps) {
         "
     >
       <span className="text-xs text-gray-600">{label}</span>
-      <span className="text-xl font-semibold text-slate-800">{value}</span>
+      <span className="text-xl font-semibold text-slate-800">{formattedValue}</span>
     </div>
   );
 }
