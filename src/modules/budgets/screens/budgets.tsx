@@ -371,24 +371,24 @@ export default function BudgetScreen() {
 
   // Função para renderizar os botões de ação (evita repetição de código)
   const renderActionButtons = (budget: any) => (
-    <div className="flex gap-1">
+    <div className="flex gap-2">
       {/* View Button */}
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 w-8 p-0 text-blue-600 hover:bg-purple-100"
+        className="h-9 w-9 p-0 text-blue-600 hover:bg-purple-100 hover:text-blue-700"
         onClick={() => handleView(budget)}
       >
-        <Eye className="h-4 w-4" />
+        <Eye className="h-5 w-5" />
       </Button>
       {/* Edit Button */}
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 w-8 p-0 text-green-600 hover:bg-green-50"
+        className="h-9 w-9 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
         onClick={() => handleEdit(budget)}
       >
-        <Edit className="h-4 w-4" />
+        <Edit className="h-5 w-5" />
       </Button>
       {/* Delete Button */}
       <AlertDialog>
@@ -396,12 +396,12 @@ export default function BudgetScreen() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+            className="h-9 w-9 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-5 w-5" />
           </Button>
         </AlertDialogTrigger>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-[425px]">
           <AlertDialogHeader>
             <AlertDialogTitle>Inativar Orçamento</AlertDialogTitle>
             <AlertDialogDescription>
@@ -409,8 +409,8 @@ export default function BudgetScreen() {
               O orçamento será marcado como INATIVO.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleDelete(budget.numeroOrcamento)}
               className="bg-red-600 hover:bg-red-700"
@@ -460,12 +460,12 @@ export default function BudgetScreen() {
               }}
             >
               <DialogTrigger asChild>
-                <Button className="bg-[#5A6ACF] hover:bg-[#5A6ACF] text-white w-full sm:w-auto">
+                <Button className="bg-[#5A6ACF] hover:bg-[#4A5ABF] text-white w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   Criar novo orçamento
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Criar Novo Orçamento</DialogTitle>
                   <DialogDescription>
@@ -762,43 +762,53 @@ export default function BudgetScreen() {
               currentBudgets.map((budget) => (
                 <div
                   key={budget.numeroOrcamento}
-                  className="bg-white rounded-lg shadow-sm border p-4 flex flex-col gap-3"
+                  className="bg-white rounded-lg shadow-md border border-gray-200 p-5 flex flex-col gap-4"
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-grow">
-                      <p className="text-sm text-gray-500">Orçamento {budget.numeroOrcamento}</p>
-                      <p className="text-sm text-gray-500 mt-1">Cliente (CPF/CNPJ)</p>
-                      <p className="font-medium text-gray-900">{formatCpfCnpj(budget.cpfCnpj)}</p>
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex-grow min-w-0">
+                      <p className="text-xs font-semibold text-blue-600 mb-2">
+                        Orçamento #{budget.numeroOrcamento}
+                      </p>
+                      <p className="text-xs text-gray-500 mb-1">Cliente</p>
+                      <p className="font-semibold text-gray-900 text-sm break-words">
+                        {formatCpfCnpj(budget.cpfCnpj)}
+                      </p>
                     </div>
-                    {renderActionButtons(budget)}
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">Veículo (Placa)</p>
-                    <p className="text-gray-800">{budget.veiculoPlaca}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">Serviço</p>
-                    <p className="text-gray-800">{budget.servicoNome}</p>
-                  </div>
-
-                  <div className="flex justify-between items-center mt-2">
-                    <div>
-                      <p className="text-sm text-gray-500">Valor</p>
-                      <p className="font-medium text-green-600">{formatCurrency(budget.valorAjustado)}</p>
+                    <div className="flex-shrink-0">
+                      {renderActionButtons(budget)}
                     </div>
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-3 space-y-3">
                     <div>
-                      <p className="text-sm text-gray-500">Status</p>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        budget.status === 'ATIVO' 
-                          ? 'bg-green-100 text-green-800' 
-                          : budget.status === 'GERADO'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {budget.status}
-                      </span>
+                      <p className="text-xs text-gray-500 mb-1">Veículo</p>
+                      <p className="text-sm font-medium text-gray-800">{budget.veiculoPlaca}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Serviço</p>
+                      <p className="text-sm text-gray-800 break-words">{budget.servicoNome}</p>
+                    </div>
+
+                    <div className="flex justify-between items-end pt-2 border-t border-gray-100">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Valor</p>
+                        <p className="font-bold text-green-600 text-lg">
+                          {formatCurrency(budget.valorAjustado)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 mb-1">Status</p>
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                          budget.status === 'ATIVO' 
+                            ? 'bg-green-100 text-green-800' 
+                            : budget.status === 'GERADO'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {budget.status}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -814,45 +824,53 @@ export default function BudgetScreen() {
         )}
 
         {/* Pagination */}
-        <div className="flex justify-center items-center mt-6 gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1 || filteredAndSortedBudgets.length === 0}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-
-          {filteredAndSortedBudgets.length > 0 && Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+        <div className="flex flex-col sm:flex-row justify-center items-center mt-6 gap-3">
+          <div className="flex items-center gap-2">
             <Button
-              key={page}
-              variant={currentPage === page ? "default" : "outline"}
+              variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(page)}
-              className={currentPage === page ? "bg-[#5A6ACF] text-white" : ""}
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1 || filteredAndSortedBudgets.length === 0}
+              className="h-10 px-3"
             >
-              {page}
+              <ChevronLeft className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Anterior</span>
             </Button>
-          ))}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages || filteredAndSortedBudgets.length === 0}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+            <div className="flex gap-1 overflow-x-auto max-w-[250px] sm:max-w-none">
+              {filteredAndSortedBudgets.length > 0 && Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                  className={`h-10 min-w-[40px] ${currentPage === page ? "bg-[#5A6ACF] hover:bg-[#4A5ABF] text-white" : ""}`}
+                >
+                  {page}
+                </Button>
+              ))}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages || filteredAndSortedBudgets.length === 0}
+              className="h-10 px-3"
+            >
+              <span className="mr-1 hidden sm:inline">Próxima</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
-        <div className="text-center text-sm text-gray-500 mt-2">
-          Página {currentPage} de {totalPages} ({filteredAndSortedBudgets.length} orçamentos encontrados)
+        <div className="text-center text-sm text-gray-500 mt-3">
+          Página {currentPage} de {totalPages} ({filteredAndSortedBudgets.length} {filteredAndSortedBudgets.length === 1 ? 'orçamento' : 'orçamentos'})
         </div>
 
-        {/* View Dialog (sem alterações) */}
+        {/* View Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Visualizar Orçamento</DialogTitle>
               <DialogDescription>
@@ -933,9 +951,9 @@ export default function BudgetScreen() {
           </DialogContent>
         </Dialog>
 
-        {/* Edit Dialog (sem alterações) */}
+        {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Editar Orçamento</DialogTitle>
               <DialogDescription>
